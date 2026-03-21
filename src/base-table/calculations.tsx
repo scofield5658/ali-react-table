@@ -21,7 +21,7 @@ let lockColumnNeedSpecifiedWidthWarned = false
 function warnLockColumnNeedSpecifiedWidth(column: ArtColumn) {
   if (!lockColumnNeedSpecifiedWidthWarned) {
     lockColumnNeedSpecifiedWidthWarned = true
-    console.warn('[sr-table] lock=true 的列需要指定宽度', column)
+    console.warn('[srp-table] lock=true 的列需要指定宽度', column)
   }
 }
 
@@ -29,14 +29,14 @@ let columnHiddenDeprecatedWarned = false
 function warnColumnHiddenDeprecated(column: ArtColumn) {
   if (!columnHiddenDeprecatedWarned) {
     columnHiddenDeprecatedWarned = true
-    console.warn('[sr-table] column.hidden 已经过时，如果需要隐藏该列，请将其从 columns 数组中移除', column)
+    console.warn('[srp-table] column.hidden 已经过时，如果需要隐藏该列，请将其从 columns 数组中移除', column)
   }
 }
 
 /** 检查列配置 & 设置默认宽度 & 剔除隐藏的列 */
 function processColumns(columns: ArtColumn[], defaultColumnWidth: number) {
   if (columns == null || !Array.isArray(columns)) {
-    console.warn('[sr-table] <BaseTable /> props.columns 需要传入一个数组', columns)
+    console.warn('[srp-table] <BaseTable /> props.columns 需要传入一个数组', columns)
     columns = []
   }
 

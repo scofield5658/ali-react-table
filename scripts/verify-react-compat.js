@@ -26,7 +26,7 @@ function writeJson(filePath, value) {
 }
 
 function main() {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-table-react-compat-'))
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'srp-table-react-compat-'))
   run('npm', ['run', 'build'], projectRoot, { stdio: 'inherit' })
   const tarballName = runAndCapture('npm', ['pack', '--silent'], projectRoot).split('\n').pop()
   const tarballPath = path.join(projectRoot, tarballName)
@@ -37,12 +37,12 @@ function main() {
       fs.mkdirSync(caseDir, { recursive: true })
 
       writeJson(path.join(caseDir, 'package.json'), {
-        name: `sr-table-react-${reactVersion.replace(/\./g, '-')}-smoke`,
+        name: `srp-table-react-${reactVersion.replace(/\./g, '-')}-smoke`,
         private: true,
         dependencies: {
           react: reactVersion,
           'react-dom': reactVersion,
-          'sr-table': `file:${tarballPath}`,
+          '@guozhi5658/srp-table': `file:${tarballPath}`,
         },
       })
 
@@ -53,7 +53,7 @@ function main() {
         `
 const React = require('react')
 const ReactDOMServer = require('react-dom/server')
-const { BaseTable } = require('sr-table')
+const { BaseTable } = require('@guozhi5658/srp-table')
 
 const html = ReactDOMServer.renderToString(
   React.createElement(BaseTable, {

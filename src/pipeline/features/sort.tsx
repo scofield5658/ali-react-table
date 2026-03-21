@@ -199,7 +199,7 @@ export function sort(opts: SortFeatureOptions = {}) {
     if (process.env.NODE_ENV !== 'production') {
       if (!hasAnySortableColumns(columns)) {
         console.warn(
-          '[sr-table] commonTransform.sort 缺少可排序的列，请通过 column.features.sortable 来指定哪些列可排序',
+          '[srp-table] commonTransform.sort 缺少可排序的列，请通过 column.features.sortable 来指定哪些列可排序',
           columns,
         )
       }

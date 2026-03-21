@@ -183,7 +183,7 @@ export function getRichVisibleRectsStream(
     op.tap((structure) => {
       if (virtualDebugLabel) {
         console.log(
-          `%c[sr-table STRUCTURE ${virtualDebugLabel}]`,
+          `%c[srp-table STRUCTURE ${virtualDebugLabel}]`,
           'color: #4f9052; font-weight: bold',
           '\ntarget:',
           target,
@@ -225,7 +225,7 @@ export function getRichVisibleRectsStream(
     op.tap((rects) => {
       if (virtualDebugLabel) {
         console.log(
-          `%c[sr-table RECTS ${virtualDebugLabel}]`,
+          `%c[srp-table RECTS ${virtualDebugLabel}]`,
           'color: #4f9052; font-weight: bold',
           '\noffsetY:',
           rects.offsetY,

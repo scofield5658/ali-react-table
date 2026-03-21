@@ -1,6 +1,19 @@
-# sr-table
+# srp-table
 
-`sr-table` is a high-performance table component library for React applications. It is designed for data-intensive UIs and supports two integration styles:
+[![NPM version][npm-image]][npm-url]
+[![node version][node-image]][node-url]
+[![npm download][download-image]][download-url]
+[![npm license][license-image]][download-url]
+
+[npm-image]: https://img.shields.io/npm/v/%40guozhi5658%2Fsrp-table.svg?style=flat-square
+[npm-url]: https://www.npmjs.com/package/@guozhi5658/srp-table
+[node-image]: https://img.shields.io/badge/node.js-%3E=_18-green.svg?style=flat-square
+[node-url]: http://nodejs.org/download/
+[download-image]: https://img.shields.io/npm/dm/%40guozhi5658%2Fsrp-table.svg?style=flat-square
+[download-url]: https://www.npmjs.com/package/@guozhi5658/srp-table
+[license-image]: https://img.shields.io/npm/l/%40guozhi5658%2Fsrp-table.svg
+
+`srp-table` is a high-performance table component library for React applications. It is designed for data-intensive UIs and supports two integration styles:
 
 - direct prop-based usage with `BaseTable`
 - composable enhancement through `pipeline` and feature plugins
@@ -26,7 +39,7 @@ The fork keeps the original MIT licensing model. Please retain the upstream attr
 ## Installation
 
 ```bash
-npm install sr-table
+npm install @guozhi5658/srp-table
 ```
 
 ## Quick Start
@@ -34,7 +47,7 @@ npm install sr-table
 ### BaseTable
 
 ```tsx
-import { BaseTable } from 'sr-table'
+import { BaseTable } from '@guozhi5658/srp-table'
 
 const columns = [
   { code: 'name', name: 'Name', width: 180 },
@@ -61,7 +74,7 @@ export function DemoTable() {
 ### Pipeline
 
 ```tsx
-import { BaseTable, features, useTablePipeline } from 'sr-table'
+import { BaseTable, features, useTablePipeline } from '@guozhi5658/srp-table'
 
 export function PipelineDemo({ columns, dataSource }) {
   const pipeline = useTablePipeline()
@@ -99,12 +112,12 @@ npm run build
 
 Build artifacts are emitted to `dist/`, including:
 
-- `dist/sr-table.js`
-- `dist/sr-table.esm.js`
-- `dist/sr-table.d.ts`
-- `dist/sr-table-pivot.js`
-- `dist/sr-table-pivot.esm.js`
-- `dist/sr-table-pivot.d.ts`
+- `dist/srp-table.js`
+- `dist/srp-table.esm.js`
+- `dist/srp-table.d.ts`
+- `dist/srp-table-pivot.js`
+- `dist/srp-table-pivot.esm.js`
+- `dist/srp-table-pivot.d.ts`
 
 ## License
 

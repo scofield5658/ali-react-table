@@ -7,8 +7,8 @@ export default defineConfig({
   root: path.resolve(__dirname, 'playground'),
   resolve: {
     alias: {
-      '@sr-table': path.resolve(__dirname, 'src/sr-table.ts'),
-      '@sr-table-pivot': path.resolve(__dirname, 'src/sr-table-pivot.ts'),
+      '@srp-table': path.resolve(__dirname, 'src/srp-table.ts'),
+      '@srp-table-pivot': path.resolve(__dirname, 'src/srp-table-pivot.ts'),
     },
   },
   server: {

@@ -1,17 +1,20 @@
 {
-  "name": "sr-table",
+  "name": "@guozhi5658/srp-table",
   "version": "1.0.0",
   "description": "High-performance React table component library",
   "sideEffects": false,
-  "module": "dist/sr-table.esm.js",
-  "main": "dist/sr-table.js",
-  "types": "dist/sr-table.d.ts",
+  "module": "dist/srp-table.esm.js",
+  "main": "dist/srp-table.js",
+  "types": "dist/srp-table.d.ts",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scofield5658/ali-react-table.git"
   },
   "homepage": "https://github.com/scofield5658/ali-react-table",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": {
     "name": "Scofield Guo",
     "email": "guoz5658@outlook.com"

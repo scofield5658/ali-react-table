@@ -3,7 +3,7 @@ import { asyncScheduler, BehaviorSubject, defer, fromEvent, Subscription } from 
 import { map, throttleTime } from 'rxjs/operators'
 import * as styledComponents from 'styled-components'
 
-/** styled-components 类库的版本，sr-table 同时支持 v3 和 v5 */
+/** styled-components 类库的版本，srp-table 同时支持 v3 和 v5 */
 export const STYLED_VERSION = (styledComponents as any).createGlobalStyle != null ? 'v5' : 'v3'
 
 export const STYLED_REF_PROP = STYLED_VERSION === 'v3' ? 'innerRef' : 'ref'

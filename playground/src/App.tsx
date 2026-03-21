@@ -109,7 +109,7 @@ export default function App() {
     >
       <aside ref={railRef} className="control-rail">
         <div className="rail-card masthead">
-          <p className="eyebrow">sr-table playground</p>
+          <p className="eyebrow">srp-table playground</p>
           <h1>SR Table Console</h1>
           <p className="lead">
             这里直接消费当前仓库源码，方便你在接入新 feature 时围绕真实数据形态做来回验证。

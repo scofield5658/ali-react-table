@@ -1,9 +1,9 @@
 {
-  "name": "sr-table/pivot",
+  "name": "@guozhi5658/srp-table-pivot",
   "private": true,
   "sideEffects": false,
-  "module": "../dist/sr-table-pivot.esm.js",
-  "main": "../dist/sr-table-pivot.js",
-  "types": "../dist/sr-table-pivot.d.ts",
+  "module": "../dist/srp-table-pivot.esm.js",
+  "main": "../dist/srp-table-pivot.js",
+  "types": "../dist/srp-table-pivot.d.ts",
   "license": "MIT"
 }

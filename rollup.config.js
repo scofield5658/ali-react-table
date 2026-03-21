@@ -25,8 +25,8 @@ const config = (arg) => ({
 })
 
 const input = {
-  'sr-table': 'src/sr-table.ts',
-  'sr-table-pivot': 'src/sr-table-pivot.ts',
+  'srp-table': 'src/srp-table.ts',
+  'srp-table-pivot': 'src/srp-table-pivot.ts',
 }
 
 export default [
@@ -36,7 +36,7 @@ export default [
       dir: 'dist',
       format: 'esm',
       entryFileNames: '[name].esm.js',
-      chunkFileNames: 'chunks/sr-table-[name]-[hash].esm.js',
+      chunkFileNames: 'chunks/srp-table-[name]-[hash].esm.js',
     },
   }),
   config({
@@ -45,7 +45,7 @@ export default [
       dir: 'dist',
       format: 'cjs',
       entryFileNames: '[name].js',
-      chunkFileNames: 'chunks/sr-table-[name]-[hash].js',
+      chunkFileNames: 'chunks/srp-table-[name]-[hash].js',
     },
   }),
 ]

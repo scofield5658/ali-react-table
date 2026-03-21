@@ -155,7 +155,7 @@ export class TablePipeline {
   }
 
   /** @deprecated
-   *  应用一个 sr-table Table transform */
+   *  应用一个 srp-table Table transform */
   useTransform(transform: TableTransform) {
     const next = transform({
       dataSource: this.getDataSource(),

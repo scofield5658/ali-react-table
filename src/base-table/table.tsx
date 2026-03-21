@@ -29,7 +29,7 @@ function warnEmptyContentIsDeprecated() {
   if (!emptyContentDeprecatedWarned) {
     emptyContentDeprecatedWarned = true
     console.warn(
-      '[sr-table] BaseTable props.emptyContent 已经过时，请使用 props.components.EmptyContent 来自定义数据为空时的表格表现',
+      '[srp-table] BaseTable props.emptyContent 已经过时，请使用 props.components.EmptyContent 来自定义数据为空时的表格表现',
     )
   }
 }
@@ -38,7 +38,7 @@ let flowRootDeprecatedWarned = false
 function warnFlowRootIsDeprecated() {
   if (!flowRootDeprecatedWarned) {
     flowRootDeprecatedWarned = true
-    console.warn('[sr-table] BaseTable v2.4 版本之后已经不再需要指定 flowRoot')
+    console.warn('[srp-table] BaseTable v2.4 版本之后已经不再需要指定 flowRoot')
   }
 }
 
@@ -200,7 +200,7 @@ export class BaseTable extends React.Component<BaseTableProps, BaseTableState> {
 
   /** @deprecated BaseTable.getDoms() 已经过时，请勿调用 */
   getDoms() {
-    console.warn('[sr-table] BaseTable.getDoms() 已经过时')
+    console.warn('[srp-table] BaseTable.getDoms() 已经过时')
     return this.domHelper
   }
 
