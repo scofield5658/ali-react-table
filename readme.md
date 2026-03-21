@@ -1,56 +1,111 @@
-# ali-react-table
+# sr-table
 
-## 开发者平时工作实在太忙了，近期项目无法进行积极维护，抱歉。
+`sr-table` is a high-performance table component library for React applications. It is designed for data-intensive UIs and supports two integration styles:
 
-[![NPM Package](https://img.shields.io/npm/v/ali-react-table?style=flat-square)](https://www.npmjs.org/package/ali-react-table)
+- direct prop-based usage with `BaseTable`
+- composable enhancement through `pipeline` and feature plugins
 
-高性能 React 表格组件. https://ali-react-table.js.org/
+The library also exposes customizable component injection points and feature slots so teams can adapt rendering, interaction, and business behaviors without rewriting the rendering core.
 
-## 安装
+## Project Status
 
-`npm install ali-react-table`
+This project is forked from [alibaba/ali-react-table](https://github.com/alibaba/ali-react-table).
 
-## 特点
+The fork keeps the original MIT licensing model. Please retain the upstream attribution and license terms when redistributing or modifying the codebase.
 
-- 高性能，内置虚拟滚动，数据量较大时自动开启
-- 简单灵活的 API，丰富的定制能力
-- 实用的表格特性：表头吸顶 & 左侧/右侧锁列 & 粘性定位的滚动条
+## Highlights
 
-## 表格适用场景
+- high-performance rendering for large datasets
+- sticky header and sticky footer support
+- left and right locked columns
+- horizontal and vertical virtualization
+- tree data, row detail, sorting, and other pipeline-driven features
+- pluggable renderers and component slots for customization
+- pivot table entry for cross-table and cross-tree-table scenarios
 
-- 需要用表格展示大量数据，对表格性能较为敏感
-- 页面没有引入 React 组件库，需要一个尺寸较小的表格组件
-- 原有表格组件可定制能力不够，需要更加灵活的表格组件
+## Installation
 
-## 效果演示
+```bash
+npm install sr-table
+```
 
-![虚拟滚动](docs/imgs/ali-react-table-virtual-scroll.gif)
-↑ 通过 dataSource 传入一个长度超过 5 万的数组，表格依旧流畅。当表格向下滚动时，BaseTable 默认会为表头设置 style.position=sticky，表头将会吸附在页面或滚动容器的顶部。[在线示例](https://ali-react-table.js.org/examples/big-data?example=滚动容器为指定高度的div)
+## Quick Start
 
-<br>
+### BaseTable
 
-![留存矩阵与投入产出分析表格](docs/imgs/remain-matrix-and-ROI-analysis-table.png)
-↑ BaseTable 提供了灵活且丰富的 API，方便上层根据各类业务需求对表格进行定制，定制的内容包括单元格内容与样式、鼠标事件回调等。 [留存矩阵 在线示例](https://ali-react-table.js.org/examples/biz/remain-matrix)， [投入产出分析表格 在线示例](https://ali-react-table.js.org/examples/biz/ROI-analysis-table)
+```tsx
+import { BaseTable } from 'sr-table'
 
-<br>
+const columns = [
+  { code: 'name', name: 'Name', width: 180 },
+  { code: 'status', name: 'Status', width: 120 },
+]
 
-![优化的加载图标位置](docs/imgs/ali-react-table-enhanced-loading-icon-position.gif)
+const dataSource = [
+  { id: '1', name: 'Alpha', status: 'Ready' },
+  { id: '2', name: 'Beta', status: 'Running' },
+]
 
-↑ 优化的加载图标位置，加载图标会位于表格的中心位置，并始终处于可见状态。
+export function DemoTable() {
+  return (
+    <BaseTable
+      primaryKey="id"
+      columns={columns}
+      dataSource={dataSource}
+      isStickyHeader
+    />
+  )
+}
+```
 
-<br>
+### Pipeline
 
-![简单透视表格](docs/imgs/ali-react-table-simple-pivot-table.gif)
-↑ 基于 BaseTable 的简单透视表格。一般来说，透视表展示的数据量较大，不过 BaseTable 内置的虚拟滚动保证了表格在大数据量下仍具有很好的性能，上层不需要过多担心性能问题。 [在线示例](https://ali-react-table.js.org/examples/others/simple-pivot-table)
+```tsx
+import { BaseTable, features, useTablePipeline } from 'sr-table'
 
-## 兼容性说明
+export function PipelineDemo({ columns, dataSource }) {
+  const pipeline = useTablePipeline()
 
-表格只兼容 `react ^16.8.0 || ^17.0.0`。
+  const tableProps = pipeline
+    .input({ columns, dataSource })
+    .primaryKey('id')
+    .use(
+      features.sort({
+        mode: 'multiple',
+      }),
+    )
+    .getProps()
 
-此外表格用到了大量较新的浏览器 API，只兼容较新版本的 PC 端浏览器或手机浏览器，详见[该 issue](https://github.com/alibaba/ali-react-table/issues/18)
+  return <BaseTable {...tableProps} />
+}
+```
 
-## 相关链接
+## Playground
 
-- NPM: https://www.npmjs.com/package/ali-react-table
-- GitHub: https://github.com/alibaba/ali-react-table
-- 表格组件介绍: https://zhuanlan.zhihu.com/p/130755755
+Run the local playground to develop and validate new features against the built-in flat, tree, and row-detail mock datasets:
+
+```bash
+npm install
+npm run playground
+```
+
+The playground is intended for iterative feature work in a real React runtime and is the fastest way to verify layout, interaction, sticky behavior, and virtualization changes.
+
+## Build
+
+```bash
+npm run build
+```
+
+Build artifacts are emitted to `dist/`, including:
+
+- `dist/sr-table.js`
+- `dist/sr-table.esm.js`
+- `dist/sr-table.d.ts`
+- `dist/sr-table-pivot.js`
+- `dist/sr-table-pivot.esm.js`
+- `dist/sr-table-pivot.d.ts`
+
+## License
+
+MIT. This fork is based on [alibaba/ali-react-table](https://github.com/alibaba/ali-react-table), and the upstream attribution should be preserved.

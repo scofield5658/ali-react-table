@@ -1,0 +1,9 @@
+{
+  "name": "sr-table/pivot",
+  "private": true,
+  "sideEffects": false,
+  "module": "../dist/sr-table-pivot.esm.js",
+  "main": "../dist/sr-table-pivot.js",
+  "types": "../dist/sr-table-pivot.d.ts",
+  "license": "MIT"
+}

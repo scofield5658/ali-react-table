@@ -1,35 +1,69 @@
 {
-  "name": "ali-react-table-monorepo",
-  "private": true,
-  "version": "0.0.0",
-  "description": "ali-react-table monorepo",
+  "name": "sr-table",
+  "version": "1.0.0",
+  "description": "High-performance React table component library",
+  "sideEffects": false,
+  "module": "dist/sr-table.esm.js",
+  "main": "dist/sr-table.js",
+  "types": "dist/sr-table.d.ts",
   "license": "MIT",
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "start:website": "yarn workspace website start",
-    "start:demo": "yarn workspace demo start",
-    "deploy:website": "GIT_USER=shinima yarn workspace website deploy"
-  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alibaba/ali-react-table.git"
+    "url": "git+https://github.com/scofield5658/ali-react-table.git"
   },
-  "homepage": "https://github.com/alibaba/ali-react-table",
+  "homepage": "https://github.com/scofield5658/ali-react-table",
   "author": {
-    "name": "Shi Feichao",
-    "email": "feichao.sfc@alibaba-inc.com"
+    "name": "Scofield Guo",
+    "email": "guoz5658@outlook.com"
   },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "semi": false,
-    "trailingComma": "all"
+  "scripts": {
+    "watch": "rollup --config rollup.config.js --watch",
+    "build": "rimraf dist/ && rollup --config rollup.config.js",
+    "playground": "vite --config vite.playground.config.ts",
+    "playground:build": "vite build --config vite.playground.config.ts",
+    "verify:react-compat": "node scripts/verify-react-compat.js",
+    "preversion": "npm run build",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "pivot"
+  ],
+  "dependencies": {
+    "@popperjs/core": "^2.9.1",
+    "@types/classnames": "^2.2.9",
+    "classnames": "^2.2.6",
+    "resize-observer-polyfill": "^1.5.1",
+    "rxjs": "^6.5.4",
+    "styled-components": "^3.4.10 || ^5.0.1"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.1 || ^18.0.0"
   },
   "devDependencies": {
-    "copyfiles": "^2.4.0",
-    "prettier": "^2.1.2",
-    "typescript": "~4.2"
+    "@babel/core": "^7.12.3",
+    "@babel/preset-env": "^7.12.1",
+    "@babel/preset-typescript": "^7.12.1",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@types/jest": "^26.0.15",
+    "@types/react": "18.0.17",
+    "@types/react-dom": "18.0.11",
+    "@types/styled-components": "^5.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jest": "^26.6.0",
+    "react": "^16.14.0",
+    "react-dom": "^16.13.1",
+    "react-is": "^16.13.0",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.3.1",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "tslib": "^2.8.1",
+    "typescript": "~4.2",
+    "vite": "^4.5.14",
+    "xlsx": "^0.16.0"
+  },
+  "volta": {
+    "node": "22.22.0",
+    "npm": "10.9.4"
   }
 }
