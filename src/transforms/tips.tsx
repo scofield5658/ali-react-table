@@ -6,7 +6,9 @@ import { internals } from '../internals'
 import { traverseColumn } from '../utils'
 import { warnTransformsDeprecated } from './warnTransformsDeprecated'
 
-const HeaderCellWithTips = styled.div`
+type DivStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>
+
+const HeaderCellWithTips = styled.div<DivStyledProps>`
   display: flex;
   align-items: center;
 

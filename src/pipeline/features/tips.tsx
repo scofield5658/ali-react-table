@@ -5,7 +5,9 @@ import { internals } from '../../internals'
 import { makeRecursiveMapper } from '../../utils'
 import { TablePipeline } from '../pipeline'
 
-const HeaderCellWithTips = styled.div`
+type DivStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>
+
+const HeaderCellWithTips = styled.div<DivStyledProps>`
   display: flex;
   align-items: center;
 

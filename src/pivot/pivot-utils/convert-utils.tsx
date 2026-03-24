@@ -7,7 +7,9 @@ import { CrossTableIndicator, CrossTreeNode } from '../cross-table'
 import { DrillNode } from './interfaces'
 import simpleEncode from './simpleEncode'
 
-const ExpandSpan = styled.span`
+type SpanStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLSpanElement>>
+
+const ExpandSpan = styled.span<SpanStyledProps>`
   display: inline-flex;
   align-items: center;
   padding: 2px 8px 2px 0;

@@ -1,6 +1,6 @@
 import pkg from './package.json'
 import resolve from '@rollup/plugin-node-resolve'
-import typescript from 'rollup-plugin-typescript2'
+import typescript from '@rollup/plugin-typescript'
 
 // @carbon/icons-react 依赖了 prop-types
 const external = Object.keys(pkg.dependencies).concat(Object.keys(pkg.peerDependencies), [
@@ -10,11 +10,11 @@ const external = Object.keys(pkg.dependencies).concat(Object.keys(pkg.peerDepend
 
 const config = (arg) => ({
   plugins: [
-    typescript({
-      tsconfig: 'tsconfig.json',
-    }),
     resolve({
-      extensions: ['.mjs', '.js', '.jsx', '.json', '.node'],
+      extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json', '.node'],
+    }),
+    typescript({
+      tsconfig: './tsconfig.json',
     }),
   ],
   external,

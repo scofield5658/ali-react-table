@@ -1,3 +1,4 @@
+import type React from 'react'
 import styled, { css } from 'styled-components'
 
 export const LOCK_SHADOW_PADDING = 20
@@ -156,7 +157,9 @@ const outerHeightStyleMixin = css`
   }
 `
 
-export const StyledArtTableLoadMoreOutterWrapper = styled.div`
+type DivStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>
+
+export const StyledArtTableLoadMoreOutterWrapper = styled.div<DivStyledProps>`
   &.${Classes.artTableLoadMoreOutterWrapper} {
     position: relative;
     height: 100%;
@@ -164,7 +167,7 @@ export const StyledArtTableLoadMoreOutterWrapper = styled.div`
   }
 `
 
-export const StyledArtTableLoadMoreWrapper = styled.div`
+export const StyledArtTableLoadMoreWrapper = styled.div<DivStyledProps>`
   &.${Classes.artTableLoadMoreWrapper} {
     position: absolute;
     left: calc(50% - 48px);
@@ -205,7 +208,7 @@ export const StyledArtTableLoadMoreWrapper = styled.div`
   }
 `
 
-export const StyledArtTableWrapper = styled.div`
+export const StyledArtTableWrapper = styled.div<DivStyledProps>`
   --row-height: 48px;
   --color: #333;
   --bgcolor: white;

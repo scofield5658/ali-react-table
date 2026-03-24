@@ -13,7 +13,9 @@ function clamp(min: number, x: number, max: number) {
 
 const RESIZE_EXPANDER_CLS = 'resize-expander'
 
-const ResizeHandle = styled.span`
+type SpanStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLSpanElement>>
+
+const ResizeHandle = styled.span<SpanStyledProps>`
   position: absolute;
   top: 0;
   bottom: 0;

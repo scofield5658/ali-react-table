@@ -1,12 +1,14 @@
 import React from 'react'
 import styled from 'styled-components'
 
-export const InlineFlexCell = styled.div`
+type DivStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>
+
+export const InlineFlexCell = styled.div<DivStyledProps>`
   display: inline-flex;
   align-items: center;
 `
 
-export const ExpansionCell = styled(InlineFlexCell)`
+export const ExpansionCell = styled(InlineFlexCell)<DivStyledProps>`
   &.leaf {
     cursor: default;
   }

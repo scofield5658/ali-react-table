@@ -15,7 +15,12 @@ function clamp(min: number, x: number, max: number) {
   return Math.max(min, Math.min(max, x))
 }
 
-const ResizeHandle = styled.span`
+interface ResizeHandleProps extends React.PropsWithChildren<React.HTMLAttributes<HTMLSpanElement>> {
+  'var-handleBackground'?: string
+  'var-handleHoverBackground'?: string
+}
+
+const ResizeHandle = styled.span<ResizeHandleProps>`
   position: absolute;
   top: 0;
   bottom: 0;
@@ -25,12 +30,12 @@ const ResizeHandle = styled.span`
   z-index: 1;
   transition: background-color 200ms;
 
-  background: ${(props: any) => {
+  background: ${(props) => {
     return props['var-handleBackground']
   }};
 
   &:hover {
-    background: ${(props: any) => {
+    background: ${(props) => {
       return props['var-handleHoverBackground']
     }};
   }

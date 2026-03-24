@@ -10,7 +10,9 @@ import { warnTransformsDeprecated } from './warnTransformsDeprecated'
 const AUTO_WIDTH_WRAPPER_CLS = 'auto-width-wrapper'
 const AUTO_WIDTH_EXPANDER_CLS = 'auto-width-expander'
 
-const AutoWidthWrapper = styled.div`
+type DivStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>
+
+const AutoWidthWrapper = styled.div<DivStyledProps>`
   height: 100%;
   display: inline-flex;
   align-items: center;

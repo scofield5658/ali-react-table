@@ -65,7 +65,9 @@ function hasAnySortableColumns(cols: ArtColumn[]): boolean {
   )
 }
 
-const TableHeaderCell = styled.div`
+type DivStyledProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>
+
+const TableHeaderCell = styled.div<DivStyledProps>`
   cursor: pointer;
   display: flex;
   align-items: center;
