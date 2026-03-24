@@ -188,6 +188,25 @@ select {
   color: white;
 }
 
+.field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.field-row input {
+  width: 108px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px 10px;
+  color: var(--ink);
+}
+
 .narrative code {
   display: inline-block;
   margin: 6px 0 10px;
@@ -206,8 +225,6 @@ select {
   flex-direction: column;
   gap: 18px;
   min-width: 0;
-  height: var(--rail-height, auto);
-  min-height: 0;
 }
 
 .canvas-header {

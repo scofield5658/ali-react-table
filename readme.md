@@ -93,6 +93,34 @@ export function PipelineDemo({ columns, dataSource }) {
 }
 ```
 
+### Fill Remaining Width
+
+Use `features.fillRemainingWidth()` when you want fixed-width columns to keep their original widths as the container grows. Instead of stretching existing columns proportionally, the table appends a blank column on the right to absorb the remaining space.
+
+```tsx
+import { BaseTable, features, useTablePipeline } from '@guozhi5658/srp-table'
+
+export function FixedWidthDemo({ columns, dataSource }) {
+  const pipeline = useTablePipeline()
+
+  const tableProps = pipeline
+    .input({ columns, dataSource })
+    .primaryKey('id')
+    .use(features.fillRemainingWidth())
+    .getProps()
+
+  return (
+    <BaseTable
+      {...tableProps}
+      defaultColumnWidth={140}
+      isStickyHeader
+    />
+  )
+}
+```
+
+This feature is designed for the pipeline path and works with `defaultColumnWidth`, locked columns, and the table's built-in virtualization logic.
+
 ## Playground
 
 Run the local playground to develop and validate new features against the built-in flat, tree, and row-detail mock datasets:

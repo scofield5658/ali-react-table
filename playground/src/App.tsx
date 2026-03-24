@@ -1,9 +1,16 @@
-import React, { ReactNode, useLayoutEffect, useRef, useState } from 'react'
+import React, { ReactNode, useState } from 'react'
 import { BaseTable, features, useTablePipeline } from './runtime-lib'
 import type { ArtColumn, BaseTableProps } from './runtime-lib'
 
-type ScenarioKey = 'flat' | 'tree' | 'detail'
+type ScenarioKey = 'flat' | 'tree' | 'detail' | 'merge'
 type VolumeKey = 'small' | 'medium' | 'large'
+type HeightPresetKey = 'compact' | 'default' | 'tall'
+
+const tableHeightPresets: Record<HeightPresetKey, { label: string; value: number }> = {
+  compact: { label: '420', value: 420 },
+  default: { label: '560', value: 560 },
+  tall: { label: '720', value: 720 },
+}
 
 const scenarioMeta: Record<
   ScenarioKey,
@@ -36,18 +43,29 @@ const scenarioMeta: Record<
     chain: 'input -> rowDetail -> BaseTable',
     note: '适合调“主表 + 子表”的组合 feature，比如操作列、行内面板、异步明细。',
   },
+  merge: {
+    title: '合并单元格',
+    eyebrow: 'Cell Span',
+    description: '同一张表里同时演示横向合并和纵向合并，方便直接观察 getSpanRect 的边界行为。',
+    chain: 'input(span) -> BaseTable',
+    note: '这个场景默认聚焦 span 表达，不叠加锁列，建议配合补空白列一起观察尾部布局。',
+  },
 }
 
-const volumeMeta: Record<VolumeKey, { label: string; flatCount: number; treeRoots: number; detailCount: number }> = {
-  small: { label: 'S', flatCount: 18, treeRoots: 3, detailCount: 10 },
-  medium: { label: 'M', flatCount: 64, treeRoots: 4, detailCount: 24 },
-  large: { label: 'L', flatCount: 240, treeRoots: 6, detailCount: 60 },
+const volumeMeta: Record<
+  VolumeKey,
+  { label: string; flatCount: number; treeRoots: number; detailCount: number; mergeGroups: number }
+> = {
+  small: { label: 'S', flatCount: 18, treeRoots: 3, detailCount: 10, mergeGroups: 2 },
+  medium: { label: 'M', flatCount: 64, treeRoots: 4, detailCount: 24, mergeGroups: 4 },
+  large: { label: 'L', flatCount: 240, treeRoots: 6, detailCount: 60, mergeGroups: 8 },
 }
 
 const accentByScenario: Record<ScenarioKey, string> = {
   flat: '#e9734a',
   tree: '#0f766e',
   detail: '#2d5bff',
+  merge: '#8a5a2b',
 }
 
 const pageStyle = {
@@ -61,56 +79,24 @@ const pageStyle = {
 } as React.CSSProperties
 
 export default function App() {
-  const railRef = useRef<HTMLElement>(null)
-  const [railHeight, setRailHeight] = useState<number | null>(null)
   const [scenario, setScenario] = useState<ScenarioKey>('flat')
   const [volume, setVolume] = useState<VolumeKey>('medium')
+  const [tableMaxHeight, setTableMaxHeight] = useState<number>(tableHeightPresets.default.value)
   const [lockColumns, setLockColumns] = useState(true)
   const [stickyHeader, setStickyHeader] = useState(true)
   const [virtual, setVirtual] = useState(true)
   const [outerBorder, setOuterBorder] = useState(true)
+  const [fillRemaining, setFillRemaining] = useState(false)
 
   const activeMeta = scenarioMeta[scenario]
   const accent = accentByScenario[scenario]
 
-  useLayoutEffect(() => {
-    const rail = railRef.current
-    if (rail == null) {
-      return
-    }
-
-    const update = () => {
-      setRailHeight(Math.ceil(rail.getBoundingClientRect().height))
-    }
-
-    update()
-
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', update)
-      return () => {
-        window.removeEventListener('resize', update)
-      }
-    }
-
-    const observer = new ResizeObserver(() => update())
-    observer.observe(rail)
-    window.addEventListener('resize', update)
-
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', update)
-    }
-  }, [])
-
   return (
-    <div
-      className="playground-shell"
-      style={{ ...pageStyle, '--accent': accent, '--rail-height': railHeight ? `${railHeight}px` : undefined } as React.CSSProperties}
-    >
-      <aside ref={railRef} className="control-rail">
+    <div className="playground-shell" style={{ ...pageStyle, '--accent': accent } as React.CSSProperties}>
+      <aside className="control-rail">
         <div className="rail-card masthead">
           <p className="eyebrow">srp-table playground</p>
-          <h1>SR Table Console</h1>
+          <h1>SRP Table Console</h1>
           <p className="lead">
             这里直接消费当前仓库源码，方便你在接入新 feature 时围绕真实数据形态做来回验证。
           </p>
@@ -124,6 +110,7 @@ export default function App() {
                 ['flat', '平铺'],
                 ['tree', '树形'],
                 ['detail', '子表'],
+                ['merge', '合并'],
               ] as Array<[ScenarioKey, string]>
             ).map(([key, label]) => (
               <button
@@ -157,11 +144,45 @@ export default function App() {
         </div>
 
         <div className="rail-card">
+          <p className="section-label">Viewport Height</p>
+          <div className="segmented">
+            {(Object.keys(tableHeightPresets) as HeightPresetKey[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={tableMaxHeight === tableHeightPresets[key].value ? 'segment active' : 'segment'}
+                onClick={() => setTableMaxHeight(tableHeightPresets[key].value)}
+              >
+                {tableHeightPresets[key].label}
+              </button>
+            ))}
+          </div>
+          <label className="field-row">
+            <span>Max Height (px)</span>
+            <input
+              type="number"
+              min={240}
+              max={1200}
+              step={20}
+              value={tableMaxHeight}
+              onChange={(event) => {
+                const nextValue = Number(event.target.value)
+                if (Number.isFinite(nextValue) && nextValue > 0) {
+                  setTableMaxHeight(nextValue)
+                }
+              }}
+            />
+          </label>
+          <p className="helper-text">默认限制为 560px，高数据量时更容易直接观察纵向虚拟滚动。</p>
+        </div>
+
+        <div className="rail-card">
           <p className="section-label">Debug Toggles</p>
           <ToggleRow label="锁列" checked={lockColumns} onChange={setLockColumns} />
           <ToggleRow label="Sticky Header" checked={stickyHeader} onChange={setStickyHeader} />
           <ToggleRow label="虚拟滚动" checked={virtual} onChange={setVirtual} />
           <ToggleRow label="外边框模式" checked={outerBorder} onChange={setOuterBorder} />
+          <ToggleRow label="右侧补空白列" checked={fillRemaining} onChange={setFillRemaining} />
         </div>
 
         <div className="rail-card narrative">
@@ -182,7 +203,18 @@ export default function App() {
           <div className="metric-row">
             <MetricCard title="Source Shape" value={activeMeta.eyebrow} />
             <MetricCard title="Volume" value={volumeMeta[volume].label} />
-            <MetricCard title="Focus" value={scenario === 'flat' ? '排序/虚拟滚动' : scenario === 'tree' ? '展开/缩进' : '主子表联动'} />
+            <MetricCard
+              title="Focus"
+              value={
+                scenario === 'flat'
+                  ? '排序/虚拟滚动'
+                  : scenario === 'tree'
+                    ? '展开/缩进'
+                    : scenario === 'detail'
+                      ? '主子表联动'
+                      : 'Span/复杂排版'
+              }
+            />
           </div>
         </header>
 
@@ -192,8 +224,10 @@ export default function App() {
             volume={volume}
             lockColumns={lockColumns}
             stickyHeader={stickyHeader}
+            tableMaxHeight={tableMaxHeight}
             virtual={virtual}
             outerBorder={outerBorder}
+            fillRemaining={fillRemaining}
           />
         </section>
       </main>
@@ -206,15 +240,19 @@ function ScenarioBoard({
   volume,
   lockColumns,
   stickyHeader,
+  tableMaxHeight,
   virtual,
   outerBorder,
+  fillRemaining,
 }: {
   scenario: ScenarioKey
   volume: VolumeKey
   lockColumns: boolean
   stickyHeader: boolean
+  tableMaxHeight: number
   virtual: boolean
   outerBorder: boolean
+  fillRemaining: boolean
 }) {
   if (scenario === 'tree') {
     return (
@@ -222,8 +260,10 @@ function ScenarioBoard({
         volume={volume}
         lockColumns={lockColumns}
         stickyHeader={stickyHeader}
+        tableMaxHeight={tableMaxHeight}
         virtual={virtual}
         outerBorder={outerBorder}
+        fillRemaining={fillRemaining}
       />
     )
   }
@@ -234,8 +274,22 @@ function ScenarioBoard({
         volume={volume}
         lockColumns={lockColumns}
         stickyHeader={stickyHeader}
+        tableMaxHeight={tableMaxHeight}
         virtual={virtual}
         outerBorder={outerBorder}
+        fillRemaining={fillRemaining}
+      />
+    )
+  }
+
+  if (scenario === 'merge') {
+    return (
+      <MergeScenarioTable
+        volume={volume}
+        stickyHeader={stickyHeader}
+        tableMaxHeight={tableMaxHeight}
+        outerBorder={outerBorder}
+        fillRemaining={fillRemaining}
       />
     )
   }
@@ -245,9 +299,54 @@ function ScenarioBoard({
       volume={volume}
       lockColumns={lockColumns}
       stickyHeader={stickyHeader}
+      tableMaxHeight={tableMaxHeight}
       virtual={virtual}
       outerBorder={outerBorder}
+      fillRemaining={fillRemaining}
     />
+  )
+}
+
+function MergeScenarioTable({
+  volume,
+  stickyHeader,
+  tableMaxHeight,
+  outerBorder,
+  fillRemaining,
+}: {
+  volume: VolumeKey
+  stickyHeader: boolean
+  tableMaxHeight: number
+  outerBorder: boolean
+  fillRemaining: boolean
+}) {
+  const rows = createMergeRows(volume)
+  const columns = createMergeColumns()
+  const pipeline = useTablePipeline()
+
+  pipeline.input({ dataSource: rows, columns }).primaryKey('id')
+  if (fillRemaining) {
+    pipeline.use(features.fillRemainingWidth())
+  }
+
+  const props = pipeline.getProps()
+
+  return (
+    <TableFrame title="合并单元格场景" subtitle="区域综述行做横向合并，区域列在明细行里做纵向合并；该场景固定关闭虚拟滚动。">
+      <BaseTable
+        {...props}
+        isStickyHeader={stickyHeader}
+        useVirtual={false}
+        useOuterBorder={outerBorder}
+        useOutterHeight
+        defaultColumnWidth={140}
+        style={getPlayableTableStyle(tableMaxHeight, {
+          '--row-height': '52px',
+          '--header-bgcolor': '#e6d7bc',
+          '--hover-bgcolor': '#fdf3e2',
+        })}
+      />
+    </TableFrame>
   )
 }
 
@@ -255,18 +354,22 @@ function FlatScenarioTable({
   volume,
   lockColumns,
   stickyHeader,
+  tableMaxHeight,
   virtual,
   outerBorder,
+  fillRemaining,
 }: {
   volume: VolumeKey
   lockColumns: boolean
   stickyHeader: boolean
+  tableMaxHeight: number
   virtual: boolean
   outerBorder: boolean
+  fillRemaining: boolean
 }) {
   const rows = createFlatRows(volume)
   const pipeline = useTablePipeline()
-  const props = pipeline
+  pipeline
     .input({
       dataSource: rows,
       columns: createFlatColumns(lockColumns),
@@ -279,7 +382,12 @@ function FlatScenarioTable({
         highlightColumnWhenActive: true,
       }),
     )
-    .getProps()
+
+  if (fillRemaining) {
+    pipeline.use(features.fillRemainingWidth())
+  }
+
+  const props = pipeline.getProps()
 
   return (
     <TableFrame title="平铺直出表格" subtitle={`共 ${rows.length} 行数据，默认开启多列排序示例。`}>
@@ -288,8 +396,9 @@ function FlatScenarioTable({
         isStickyHeader={stickyHeader}
         useVirtual={virtual ? 'auto' : false}
         useOuterBorder={outerBorder}
+        useOutterHeight
         defaultColumnWidth={140}
-        style={sharedTableStyle}
+        style={getPlayableTableStyle(tableMaxHeight)}
       />
     </TableFrame>
   )
@@ -299,18 +408,22 @@ function TreeScenarioTable({
   volume,
   lockColumns,
   stickyHeader,
+  tableMaxHeight,
   virtual,
   outerBorder,
+  fillRemaining,
 }: {
   volume: VolumeKey
   lockColumns: boolean
   stickyHeader: boolean
+  tableMaxHeight: number
   virtual: boolean
   outerBorder: boolean
+  fillRemaining: boolean
 }) {
   const rows = createTreeRows(volume)
   const pipeline = useTablePipeline()
-  const props = pipeline
+  pipeline
     .input({
       dataSource: rows,
       columns: createTreeColumns(lockColumns),
@@ -321,7 +434,12 @@ function TreeScenarioTable({
         defaultOpenKeys: rows.slice(0, 2).map((node) => node.id),
       }),
     )
-    .getProps()
+
+  if (fillRemaining) {
+    pipeline.use(features.fillRemainingWidth())
+  }
+
+  const props = pipeline.getProps()
 
   return (
     <TableFrame title="树状展开表格" subtitle="原始数据保留 children，展开态由 pipeline 接管。">
@@ -330,8 +448,9 @@ function TreeScenarioTable({
         isStickyHeader={stickyHeader}
         useVirtual={virtual ? 'auto' : false}
         useOuterBorder={outerBorder}
+        useOutterHeight
         defaultColumnWidth={150}
-        style={sharedTableStyle}
+        style={getPlayableTableStyle(tableMaxHeight)}
       />
     </TableFrame>
   )
@@ -341,18 +460,22 @@ function DetailScenarioTable({
   volume,
   lockColumns,
   stickyHeader,
+  tableMaxHeight,
   virtual,
   outerBorder,
+  fillRemaining,
 }: {
   volume: VolumeKey
   lockColumns: boolean
   stickyHeader: boolean
+  tableMaxHeight: number
   virtual: boolean
   outerBorder: boolean
+  fillRemaining: boolean
 }) {
   const rows = createDetailRows(volume)
   const pipeline = useTablePipeline()
-  const props = pipeline
+  pipeline
     .input({
       dataSource: rows,
       columns: createDetailColumns(lockColumns),
@@ -365,14 +488,19 @@ function DetailScenarioTable({
           return Array.isArray(row.lineItems) && row.lineItems.length > 0
         },
         renderDetail(row) {
-          return <DetailSubTable parent={row} />
+          return <DetailSubTable parent={row} fillRemaining={fillRemaining} />
         },
         detailCellStyle: {
           background: '#fffaf3',
         },
       }),
     )
-    .getProps()
+
+  if (fillRemaining) {
+    pipeline.use(features.fillRemainingWidth())
+  }
+
+  const props = pipeline.getProps()
 
   return (
     <TableFrame title="展开子表场景" subtitle="展开后会插入一整行 detail，适合调主子表联动 feature。">
@@ -381,14 +509,15 @@ function DetailScenarioTable({
         isStickyHeader={stickyHeader}
         useVirtual={virtual ? 'auto' : false}
         useOuterBorder={outerBorder}
+        useOutterHeight
         defaultColumnWidth={150}
-        style={sharedTableStyle}
+        style={getPlayableTableStyle(tableMaxHeight)}
       />
     </TableFrame>
   )
 }
 
-function DetailSubTable({ parent }: { parent: any }) {
+function DetailSubTable({ parent, fillRemaining }: { parent: any; fillRemaining: boolean }) {
   const columns: ArtColumn[] = [
     { name: 'SKU', code: 'sku', width: 180 },
     { name: '规格', code: 'spec', width: 200 },
@@ -396,6 +525,14 @@ function DetailSubTable({ parent }: { parent: any }) {
     { name: '单价', code: 'price', align: 'right', width: 120 },
     { name: '金额', code: 'amount', align: 'right', width: 140 },
   ]
+  const pipeline = useTablePipeline()
+
+  pipeline.input({ dataSource: parent.lineItems, columns }).primaryKey('sku')
+  if (fillRemaining) {
+    pipeline.use(features.fillRemainingWidth())
+  }
+
+  const props = pipeline.getProps()
 
   return (
     <div className="detail-card">
@@ -410,9 +547,7 @@ function DetailSubTable({ parent }: { parent: any }) {
         </div>
       </div>
       <BaseTable
-        primaryKey="sku"
-        dataSource={parent.lineItems}
-        columns={columns}
+        {...props}
         hasHeader
         isStickyHeader={false}
         useVirtual={false}
@@ -605,6 +740,118 @@ function createDetailColumns(lockColumns: boolean): ArtColumn[] {
   ]
 }
 
+function createMergeColumns(): ArtColumn[] {
+  return [
+    {
+      name: '区域 / 分组',
+      code: 'regionLabel',
+      width: 180,
+      render(value: string, row: any) {
+        if (row.rowType === 'summary') {
+          return (
+            <div className="cell-stack">
+              <strong>{value}</strong>
+              <span>{row.summaryNote}</span>
+            </div>
+          )
+        }
+
+        return (
+          <div className="cell-stack">
+            <strong>{value}</strong>
+            <span>{row.regionHint}</span>
+          </div>
+        )
+      },
+      getCellProps(value: string, row: any) {
+        if (row.rowType === 'summary') {
+          return {
+            style: {
+              background: '#f8efdf',
+              fontWeight: 700,
+            },
+          }
+        }
+
+        return {
+          style: {
+            background: '#fffaf0',
+            verticalAlign: 'middle',
+          },
+        }
+      },
+      getSpanRect(_value: string, row: any, rowIndex: number) {
+        if (row.rowType === 'summary') {
+          return { top: rowIndex, bottom: rowIndex + 1, left: 0, right: 3 }
+        }
+
+        if (row.rowType === 'detail-head') {
+          return { top: rowIndex, bottom: rowIndex + 2, left: 0, right: 1 }
+        }
+      },
+    },
+    {
+      name: '渠道',
+      code: 'channel',
+      width: 150,
+      render(value: string, row: any) {
+        return row.rowType === 'summary' ? null : value
+      },
+    },
+    {
+      name: '动作 / 事项',
+      code: 'initiative',
+      width: 280,
+      render(value: string, row: any) {
+        if (row.rowType === 'summary') {
+          return null
+        }
+
+        return (
+          <div className="cell-stack">
+            <strong>{value}</strong>
+            <span>{row.initiativeNote}</span>
+          </div>
+        )
+      },
+    },
+    {
+      name: '阶段',
+      code: 'stage',
+      width: 140,
+      render(value: string, row: any) {
+        if (row.rowType === 'summary') {
+          return <span className="status-dot status-watching">Region Summary</span>
+        }
+
+        return <span className={`status-dot ${row.stageTone}`}>{value}</span>
+      },
+    },
+    {
+      name: '预算',
+      code: 'budget',
+      width: 140,
+      align: 'right',
+      render(value: number, row: any) {
+        return <strong>{row.rowType === 'summary' ? formatCurrency(value) : formatCurrency(value)}</strong>
+      },
+    },
+    {
+      name: 'Owner',
+      code: 'owner',
+      width: 160,
+      render(value: string, row: any) {
+        return (
+          <div className="cell-stack">
+            <strong>{value}</strong>
+            <span>{row.ownerHint}</span>
+          </div>
+        )
+      },
+    },
+  ]
+}
+
 function createFlatRows(volume: VolumeKey) {
   const regions = ['华东', '华北', '华南', '西南']
   const owners = ['Ada', 'Ming', 'Iris', 'Neo', 'Jules']
@@ -704,6 +951,61 @@ function createDetailRows(volume: VolumeKey) {
   })
 }
 
+function createMergeRows(volume: VolumeKey) {
+  const regions = ['华东大区', '华南大区', '华北大区', '西南大区', '西北大区', '华中大区', '直营电商', '新拓渠道']
+  const detailChannels = ['旗舰店', '直播间']
+  const owners = ['Aster', 'Mika', 'Theo', 'June', 'Luca', 'Iris']
+  const groups = volumeMeta[volume].mergeGroups
+
+  return Array.from({ length: groups }, (_, index) => {
+    const region = regions[index % regions.length]
+    const summaryBudget = 180000 + index * 26000
+
+    return [
+      {
+        id: `merge-${index}-summary`,
+        rowType: 'summary',
+        regionLabel: `${region} 综述`,
+        summaryNote: '横向合并前 3 列，用来放摘要说明和小结。',
+        channel: '',
+        initiative: '',
+        stage: 'summary',
+        budget: summaryBudget,
+        owner: owners[index % owners.length],
+        ownerHint: `本周新增 ${2 + (index % 3)} 个检查项`,
+      },
+      {
+        id: `merge-${index}-detail-0`,
+        rowType: 'detail-head',
+        regionLabel: region,
+        regionHint: '纵向合并 2 行',
+        channel: detailChannels[0],
+        initiative: `${region} 春促备货检查`,
+        initiativeNote: 'SKU 结构已锁定，等待仓配与前台活动页最终对表。',
+        stage: '已锁仓',
+        stageTone: 'status-packed',
+        budget: 62000 + index * 8000,
+        owner: owners[(index + 1) % owners.length],
+        ownerHint: '主链路 owner',
+      },
+      {
+        id: `merge-${index}-detail-1`,
+        rowType: 'detail-tail',
+        regionLabel: region,
+        regionHint: '由上一行合并过来',
+        channel: detailChannels[1],
+        initiative: `${region} 直播补贴复核`,
+        initiativeNote: '确认直播脚本、折扣梯度和核销口径，观察退款回流。',
+        stage: '待复核',
+        stageTone: index % 2 === 0 ? 'status-pending' : 'status-watching',
+        budget: 36000 + index * 6500,
+        owner: owners[(index + 2) % owners.length],
+        ownerHint: '直播侧 owner',
+      },
+    ]
+  }).flat()
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
@@ -721,4 +1023,17 @@ const sharedTableStyle: BaseTableProps['style'] = {
   '--highlight-bgcolor': '#f8ebd0',
   '--row-height': '46px',
   '--cell-padding': '8px 12px',
+}
+
+function getPlayableTableStyle(
+  tableMaxHeight: number,
+  overrides: BaseTableProps['style'] = {},
+): BaseTableProps['style'] {
+  return {
+    ...sharedTableStyle,
+    ...overrides,
+    maxHeight: tableMaxHeight,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+  }
 }

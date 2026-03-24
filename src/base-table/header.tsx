@@ -1,5 +1,6 @@
 import cx from 'classnames'
 import React, { CSSProperties } from 'react'
+import { takeFillRemainingWidthColumn } from '../fillRemainingWidth'
 import { ArtColumn } from '../interfaces'
 import { getTreeDepth, isLeafNode } from '../utils'
 import { HorizontalRenderRange, RenderInfo } from './interfaces'
@@ -142,8 +143,13 @@ function calculateHeaderRenderInfo(
 ): { flat: ColWithRenderInfo[]; leveled: ColWithRenderInfo[][] } {
   if (useVirtual.header) {
     const leftPart = calculateLeveledAndFlat(attachColIndex(nested.left, 0), rowCount)
-    const filtered = filterNestedCenter(nested.center, hoz, flat.left.length)
+    const { columns: centerNested, fillColumn } = takeFillRemainingWidthColumn(nested.center)
+    const filtered = filterNestedCenter(centerNested, hoz, flat.left.length)
     const centerPart = calculateLeveledAndFlat(filtered, rowCount)
+    const fillPart =
+      fillColumn == null
+        ? { flat: [] as ColWithRenderInfo[], leveled: range(rowCount).map(() => [] as ColWithRenderInfo[]) }
+        : calculateLeveledAndFlat(attachColIndex([fillColumn], flat.left.length + flat.center.length - 1), rowCount)
     const rightPart = calculateLeveledAndFlat(
       attachColIndex(nested.right, flat.left.length + flat.center.length),
       rowCount,
@@ -155,6 +161,7 @@ function calculateHeaderRenderInfo(
         { type: 'blank', width: hoz.leftBlank, blankSide: 'left' },
         ...centerPart.flat,
         { type: 'blank', width: hoz.rightBlank, blankSide: 'right' },
+        ...fillPart.flat,
         ...rightPart.flat,
       ],
       leveled: range(rowCount).map((depth) => [
@@ -162,6 +169,7 @@ function calculateHeaderRenderInfo(
         { type: 'blank', width: hoz.leftBlank, blankSide: 'left' },
         ...centerPart.leveled[depth],
         { type: 'blank', width: hoz.rightBlank, blankSide: 'right' },
+        ...fillPart.leveled[depth],
         ...rightPart.leveled[depth],
       ]),
     }

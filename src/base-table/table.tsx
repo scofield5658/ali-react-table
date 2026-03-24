@@ -2,6 +2,7 @@ import cx from 'classnames'
 import React, { CSSProperties, ReactNode } from 'react'
 import { BehaviorSubject, combineLatest, noop, Subscription } from 'rxjs'
 import * as op from 'rxjs/operators'
+import { getColumnLogicWidth } from '../fillRemainingWidth'
 import { ArtColumn } from '../interfaces'
 import { calculateRenderInfo } from './calculations'
 import { EmptyHtmlTable } from './empty'
@@ -763,7 +764,7 @@ export class BaseTable extends React.Component<BaseTableProps, BaseTableState> {
     const { flat, hasLockColumn } = this.lastInfo
 
     if (hasLockColumn) {
-      const sumOfColWidth = sum(flat.full.map((col) => col.width))
+      const sumOfColWidth = sum(flat.full.map(getColumnLogicWidth))
       const nextNeedRenderLock = sumOfColWidth > this.domHelper.artTable.clientWidth
       if (needRenderLock !== nextNeedRenderLock) {
         this.setState({ needRenderLock: nextNeedRenderLock })

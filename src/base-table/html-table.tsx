@@ -3,6 +3,7 @@ import React, { CSSProperties, ReactNode } from 'react'
 import { ArtColumn } from '../interfaces'
 import { internals } from '../internals'
 import { Colgroup } from './colgroup'
+import { getMaximumColSpan } from './helpers/getMaximumColSpan'
 import SpanManager from './helpers/SpanManager'
 import { RenderInfo } from './interfaces'
 import { Classes } from './styles'
@@ -121,7 +122,16 @@ export function HtmlTable({
 
     // rowSpan/colSpan 不能过大，避免 rowSpan/colSpan 影响因虚拟滚动而未渲染的单元格
     rowSpan = Math.min(rowSpan, verInfo.limit - rowIndex)
-    colSpan = Math.min(colSpan, leftFlatCount + hoz.rightIndex - colIndex)
+    colSpan = Math.min(
+      colSpan,
+      getMaximumColSpan({
+        column,
+        colIndex,
+        leftFlatCount,
+        horizontalRenderRange: hoz,
+        visible: hozInfo.visible,
+      }),
+    )
 
     const hasSpan = colSpan > 1 || rowSpan > 1
     if (hasSpan) {

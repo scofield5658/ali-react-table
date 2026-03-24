@@ -2,6 +2,11 @@ import React from 'react'
 import { fromEvent } from 'rxjs'
 import * as op from 'rxjs/operators'
 import styled from 'styled-components'
+import {
+  appendFillRemainingWidthColumn,
+  takeFillRemainingWidthColumn,
+} from '../../fillRemainingWidth'
+import { ArtColumn } from '../../interfaces'
 import { internals } from '../../internals'
 import { collectNodes, makeRecursiveMapper, mergeCellProps } from '../../utils'
 import { TablePipeline } from '../pipeline'
@@ -67,7 +72,8 @@ export function columnResize(opts: ColumnResizeFeatureOptions = {}) {
 
   return function columnResizeFeature(pipeline: TablePipeline) {
     const sizes = opts.sizes ?? pipeline.getStateAtKey(stateKey) ?? opts.defaultSizes ?? []
-    const leafColumns = collectNodes(pipeline.getColumns(), 'leaf-only')
+    const { columns, fillColumn } = takeFillRemainingWidthColumn(pipeline.getColumns())
+    const leafColumns = collectNodes(columns, 'leaf-only')
     leafColumns.forEach((col, colIndex) => {
       if (sizes[colIndex] == null) {
         if (typeof col.width === 'number') {
@@ -135,8 +141,7 @@ export function columnResize(opts: ColumnResizeFeatureOptions = {}) {
       })
     }
 
-    return pipeline.mapColumns(
-      makeRecursiveMapper((col, { startIndex, endIndex }) => {
+    const resizedColumns = makeRecursiveMapper<ArtColumn>((col, { startIndex, endIndex }) => {
         const prevTitle = internals.safeRenderHeader(col)
 
         return {
@@ -160,7 +165,8 @@ export function columnResize(opts: ColumnResizeFeatureOptions = {}) {
             },
           }),
         }
-      }),
-    )
+    })(columns)
+
+    return pipeline.columns(fillColumn == null ? resizedColumns : appendFillRemainingWidthColumn(resizedColumns, fillColumn))
   }
 }

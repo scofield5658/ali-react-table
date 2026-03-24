@@ -1,4 +1,5 @@
 import { ArtColumn } from '../interfaces'
+import { getColumnLogicWidth, isFillRemainingWidthColumn, takeFillRemainingWidthColumn } from '../fillRemainingWidth'
 import { collectNodes, isLeafNode } from '../utils'
 import {
   HorizontalRenderRange,
@@ -44,7 +45,7 @@ function processColumns(columns: ArtColumn[], defaultColumnWidth: number) {
     const result: ArtColumn[] = []
 
     for (let column of columns) {
-      if (column.width == null) {
+      if (column.width == null && !isFillRemainingWidthColumn(column)) {
         if (defaultColumnWidth != null) {
           column = { ...column, width: defaultColumnWidth }
         } else if (process.env.NODE_ENV !== 'production' && isLeafNode(column) && column.lock) {
@@ -97,16 +98,16 @@ function getLeftNestedLockCount(columns: ArtColumn[]) {
 function getHorizontalRenderRange({
   offsetX,
   maxRenderWidth,
-  flat,
+  center,
   useVirtual,
 }: {
   offsetX: number
   maxRenderWidth: number
-  flat: RenderInfo['flat']
+  center: ArtColumn[]
   useVirtual: ResolvedUseVirtual
 }): HorizontalRenderRange {
   if (!useVirtual.horizontal) {
-    return { leftIndex: 0, leftBlank: 0, rightIndex: flat.full.length, rightBlank: 0 }
+    return { leftIndex: 0, leftBlank: 0, rightIndex: center.length, rightBlank: 0 }
   }
 
   let leftIndex = 0
@@ -115,11 +116,12 @@ function getHorizontalRenderRange({
   let centerRenderWidth = 0
 
   const overscannedOffsetX = Math.max(0, offsetX - OVERSCAN_SIZE)
-  while (leftIndex < flat.center.length) {
-    const col = flat.center[leftIndex]
-    if (col.width + leftBlank < overscannedOffsetX) {
+  while (leftIndex < center.length) {
+    const col = center[leftIndex]
+    const colWidth = getColumnLogicWidth(col)
+    if (colWidth + leftBlank < overscannedOffsetX) {
       leftIndex += 1
-      leftBlank += col.width
+      leftBlank += colWidth
     } else {
       break
     }
@@ -128,18 +130,19 @@ function getHorizontalRenderRange({
   // 考虑 over scan 之后，中间部分的列至少需要渲染的宽度
   const minCenterRenderWidth = maxRenderWidth + (overscannedOffsetX - leftBlank) + 2 * OVERSCAN_SIZE
 
-  while (leftIndex + centerCount < flat.center.length) {
-    const col = flat.center[leftIndex + centerCount]
-    if (col.width + centerRenderWidth < minCenterRenderWidth) {
-      centerRenderWidth += col.width
+  while (leftIndex + centerCount < center.length) {
+    const col = center[leftIndex + centerCount]
+    const colWidth = getColumnLogicWidth(col)
+    if (colWidth + centerRenderWidth < minCenterRenderWidth) {
+      centerRenderWidth += colWidth
       centerCount += 1
     } else {
       break
     }
   }
 
-  const rightBlankCount = flat.center.length - leftIndex - centerCount
-  const rightBlank = sum(flat.center.slice(flat.center.length - rightBlankCount).map((col) => col.width))
+  const rightBlankCount = center.length - leftIndex - centerCount
+  const rightBlank = sum(center.slice(center.length - rightBlankCount).map(getColumnLogicWidth))
   return {
     leftIndex: leftIndex,
     leftBlank,
@@ -165,6 +168,7 @@ export function calculateRenderInfo(table: BaseTable): RenderInfo {
   const columns = processColumns(columnsProp, defaultColumnWidth)
   const leftNestedLockCount = getLeftNestedLockCount(columns)
   const fullFlat = collectNodes(columns, 'leaf-only')
+  const { columns: fullFlatWithoutFill } = takeFillRemainingWidthColumn(fullFlat)
 
   let flat: RenderInfo['flat']
   let nested: RenderInfo['nested']
@@ -181,7 +185,7 @@ export function calculateRenderInfo(table: BaseTable): RenderInfo {
     const rightNested = columns.slice(columns.length - rightNestedLockCount)
 
     const shouldEnableHozVirtual =
-      fullFlat.length >= hozVirtualThreshold && fullFlat.every((col) => col.width != null)
+      fullFlat.length >= hozVirtualThreshold && fullFlatWithoutFill.every((col) => col.width != null)
     const shouldEnableVerVirtual = dataSourceProp.length >= verVirtualThreshold
 
     useVirtual = {
@@ -211,17 +215,24 @@ export function calculateRenderInfo(table: BaseTable): RenderInfo {
     }
   }
 
-  const horizontalRenderRange = getHorizontalRenderRange({ maxRenderWidth, offsetX, useVirtual, flat })
+  const { columns: centerFlat, fillColumn: centerFillColumn } = takeFillRemainingWidthColumn(flat.center)
+
+  const horizontalRenderRange = getHorizontalRenderRange({ maxRenderWidth, offsetX, useVirtual, center: centerFlat })
   const verticalRenderRange = table.getVerticalRenderRange(useVirtual)
 
   const { leftBlank, leftIndex, rightBlank, rightIndex } = horizontalRenderRange
   const unfilteredVisibleColumnDescriptors: VisibleColumnDescriptor[] = [
     ...flat.left.map((col, i) => ({ type: 'normal', col, colIndex: i } as const)),
     leftBlank > 0 && { type: 'blank', blankSide: 'left', width: leftBlank },
-    ...flat.center
+    ...centerFlat
       .slice(leftIndex, rightIndex)
       .map((col, i) => ({ type: 'normal', col, colIndex: flat.left.length + leftIndex + i } as const)),
     rightBlank > 0 && { type: 'blank', blankSide: 'right', width: rightBlank },
+    centerFillColumn && {
+      type: 'normal',
+      col: centerFillColumn,
+      colIndex: fullFlat.indexOf(centerFillColumn),
+    },
     ...flat.right.map(
       (col, i) => ({ type: 'normal', col, colIndex: flat.full.length - flat.right.length + i } as const),
     ),
@@ -236,18 +247,18 @@ export function calculateRenderInfo(table: BaseTable): RenderInfo {
   let stickyLeft = 0
   for (let i = 0; i < leftFlatCount; i++) {
     stickyLeftMap.set(i, stickyLeft)
-    stickyLeft += flat.full[i].width
+    stickyLeft += getColumnLogicWidth(flat.full[i])
   }
 
   const stickyRightMap = new Map<number, number>()
   let stickyRight = 0
   for (let i = 0; i < rightFlatCount; i++) {
     stickyRightMap.set(fullFlatCount - 1 - i, stickyRight)
-    stickyRight += flat.full[fullFlatCount - 1 - i].width
+    stickyRight += getColumnLogicWidth(flat.full[fullFlatCount - 1 - i])
   }
 
-  const leftLockTotalWidth = sum(flat.left.map((col) => col.width))
-  const rightLockTotalWidth = sum(flat.right.map((col) => col.width))
+  const leftLockTotalWidth = sum(flat.left.map(getColumnLogicWidth))
+  const rightLockTotalWidth = sum(flat.right.map(getColumnLogicWidth))
 
   return {
     horizontalRenderRange,
