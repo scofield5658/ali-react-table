@@ -29,5 +29,5 @@ export function getMaximumColSpan(params: {
     maxColSpan = Math.max(maxColSpan, visibleFillColumnIndex + 1 - colIndex)
   }
 
-  return maxColSpan
+  return Math.max(1, maxColSpan)
 }

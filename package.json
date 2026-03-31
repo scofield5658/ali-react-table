@@ -1,6 +1,6 @@
 {
   "name": "@guozhi5658/srp-table",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "High-performance React table component library",
   "sideEffects": false,
   "module": "dist/srp-table.esm.js",

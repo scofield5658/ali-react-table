@@ -113,3 +113,26 @@ test('getMaximumColSpan does not cross hidden center columns to reach fill colum
     }),
   ).toBeLessThan(columns.length)
 })
+
+test('getMaximumColSpan keeps right lock columns at least one cell wide when rowSpan is enabled', () => {
+  const columns: ArtColumn[] = [
+    { name: 'A', code: 'a', width: 120 },
+    { name: 'B', code: 'b', width: 120 },
+    { name: 'C', code: 'c', width: 120 },
+    { name: 'D', code: 'd', width: 120, lock: true },
+  ]
+
+  const info = calculateRenderInfo(makeTable(columns, 120))
+  const rightLockColumn = info.flat.full[info.flat.full.length - 1]
+  const rightLockIndex = info.flat.full.length - 1
+
+  expect(
+    getMaximumColSpan({
+      column: rightLockColumn,
+      colIndex: rightLockIndex,
+      leftFlatCount: info.flat.left.length,
+      horizontalRenderRange: info.horizontalRenderRange,
+      visible: info.visible,
+    }),
+  ).toBe(1)
+})
