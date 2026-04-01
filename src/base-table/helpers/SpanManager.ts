@@ -13,6 +13,13 @@ export default class SpanManager {
     )
   }
 
+  public testSkipRange(rowIndex: number, leftIndex: number, rightIndex: number) {
+    return this.rects.some(
+      ({ left, right, top, bottom }) =>
+        left < rightIndex && leftIndex < right && top <= rowIndex && rowIndex < bottom,
+    )
+  }
+
   public stripUpwards(rowIndex: number) {
     this.rects = this.rects.filter(rect => rect.bottom > rowIndex)
   }

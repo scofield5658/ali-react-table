@@ -3,11 +3,12 @@ import React from 'react'
 import { ExpansionCell, icons, InlineFlexCell } from '../../common-views'
 import { ArtColumn } from '../../interfaces'
 import { internals } from '../../internals'
-import { collectNodes, isLeafNode, mergeCellProps } from '../../utils'
+import { isLeafNode, mergeCellProps } from '../../utils'
 import { flatMap } from '../../utils/others'
 import { TablePipeline } from '../pipeline'
 
 const groupingMetaSymbol = Symbol('row-grouping-meta')
+const openEndedSpanRight = Number.MAX_SAFE_INTEGER
 
 function attachGroupingMeta(row: any) {
   return { [groupingMetaSymbol]: { expandable: !isLeafNode(row) }, ...row }
@@ -89,7 +90,6 @@ export function rowGrouping(opts: RowGroupingFeatureOptions = {}) {
       if (columns.length === 0) {
         return columns
       }
-      const columnFlatCount = collectNodes(columns, 'leaf-only').length
       const [firstCol, ...others] = columns
 
       const render = (value: any, row: any, rowIndex: number) => {
@@ -165,7 +165,7 @@ export function rowGrouping(opts: RowGroupingFeatureOptions = {}) {
           getCellProps,
           getSpanRect(value: any, row: any, rowIndex: number) {
             if (getGroupingMeta(row).isGroupHeader) {
-              return { top: rowIndex, bottom: rowIndex + 1, left: 0, right: columnFlatCount }
+              return { top: rowIndex, bottom: rowIndex + 1, left: 0, right: openEndedSpanRight }
             }
           },
         },

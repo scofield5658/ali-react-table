@@ -3,7 +3,7 @@ import React, { CSSProperties, ReactNode } from 'react'
 import { ArtColumn } from '../interfaces'
 import { internals } from '../internals'
 import { Colgroup } from './colgroup'
-import { getMaximumColSpan } from './helpers/getMaximumColSpan'
+import { getRenderedColSpan, getVisibleDescriptorLogicalRange } from './helpers/getMaximumColSpan'
 import SpanManager from './helpers/SpanManager'
 import { RenderInfo } from './interfaces'
 import { Classes } from './styles'
@@ -35,6 +35,7 @@ export function HtmlTable({
   horizontalRenderInfo: hozInfo,
   components: { Row, Cell, TableBody },
 }: HtmlTableProps) {
+  const fullRowMergedCellZIndex = 21
   const { flat, horizontalRenderRange: hoz } = hozInfo
 
   const spanManager = new SpanManager()
@@ -78,6 +79,16 @@ export function HtmlTable({
       'data-rowindex': rowIndex,
       children: hozInfo.visible.map((descriptor) => {
         if (descriptor.type === 'blank') {
+          const blankSpan = getVisibleDescriptorLogicalRange({
+            descriptor,
+            fullFlatCount,
+            leftFlatCount,
+            rightFlatCount,
+            horizontalRenderRange: hoz,
+          })
+          if (spanManager.testSkipRange(rowIndex, blankSpan.left, blankSpan.right)) {
+            return null
+          }
           return <td key={descriptor.blankSide} />
         }
         return renderBodyCell(row, rowIndex, descriptor.col, descriptor.colIndex)
@@ -122,30 +133,44 @@ export function HtmlTable({
 
     // rowSpan/colSpan 不能过大，避免 rowSpan/colSpan 影响因虚拟滚动而未渲染的单元格
     rowSpan = Math.min(rowSpan, verInfo.limit - rowIndex)
-    colSpan = Math.min(
-      colSpan,
-      getMaximumColSpan({
-        column,
-        colIndex,
-        leftFlatCount,
-        horizontalRenderRange: hoz,
-        visible: hozInfo.visible,
-      }),
-    )
+    const requestedColSpan = colSpan
+    const shouldSpanAcrossRenderedRow = rowSpan === 1 && colIndex === 0 && requestedColSpan >= fullFlatCount
+    colSpan = getRenderedColSpan({
+      colIndex,
+      colSpan: requestedColSpan,
+      visible: hozInfo.visible,
+      fullFlatCount,
+      leftFlatCount,
+      rightFlatCount,
+      horizontalRenderRange: hoz,
+    })
 
     const hasSpan = colSpan > 1 || rowSpan > 1
     if (hasSpan) {
       spanManager.add(rowIndex, colIndex, colSpan, rowSpan)
     }
 
+    const requestedSpanRight = colIndex + requestedColSpan
+    const crossesLeftLockBoundary = colIndex < leftFlatCount && requestedSpanRight > leftFlatCount
+    const rightLockStart = fullFlatCount - rightFlatCount
+    const crossesRightLockBoundary = colIndex < rightLockStart && requestedSpanRight > rightLockStart
+    const shouldDisableStickyForSpan = hasSpan && (crossesLeftLockBoundary || crossesRightLockBoundary)
+
     const positionStyle: CSSProperties = {}
 
-    if (colIndex < leftFlatCount) {
-      positionStyle.position = 'sticky'
-      positionStyle.left = hozInfo.stickyLeftMap.get(colIndex)
-    } else if (colIndex >= fullFlatCount - rightFlatCount) {
-      positionStyle.position = 'sticky'
-      positionStyle.right = hozInfo.stickyRightMap.get(colIndex)
+    if (!shouldDisableStickyForSpan) {
+      if (colIndex < leftFlatCount) {
+        positionStyle.position = 'sticky'
+        positionStyle.left = hozInfo.stickyLeftMap.get(colIndex)
+      } else if (colIndex >= rightLockStart) {
+        positionStyle.position = 'sticky'
+        positionStyle.right = hozInfo.stickyRightMap.get(colIndex)
+      }
+    }
+
+    if (shouldSpanAcrossRenderedRow) {
+      positionStyle.position = 'relative'
+      positionStyle.zIndex = fullRowMergedCellZIndex
     }
 
     const tdProps = {
@@ -153,8 +178,8 @@ export function HtmlTable({
       className: cx(Classes.tableCell, cellProps.className, {
         first: colIndex === 0,
         last: colIndex + colSpan === fullFlatCount,
-        'lock-left': colIndex < leftFlatCount,
-        'lock-right': colIndex >= fullFlatCount - rightFlatCount,
+        'lock-left': !shouldDisableStickyForSpan && colIndex < leftFlatCount,
+        'lock-right': !shouldDisableStickyForSpan && colIndex >= rightLockStart,
       }),
       ...(hasSpan ? { colSpan, rowSpan } : null),
       style: {

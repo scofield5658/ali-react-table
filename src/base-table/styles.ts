@@ -349,6 +349,18 @@ export const StyledArtTableWrapper = styled.div<DivStyledProps>`
     border-bottom: none;
   }
 
+  th.lock-left,
+  th.lock-right {
+    background: var(--header-bgcolor);
+    background-clip: padding-box;
+  }
+
+  td.lock-left,
+  td.lock-right {
+    background: var(--bgcolor);
+    background-clip: padding-box;
+  }
+
   .lock-left,
   .lock-right {
     z-index: ${Z.lock};

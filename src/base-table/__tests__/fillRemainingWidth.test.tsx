@@ -1,7 +1,7 @@
 import { appendFillRemainingWidthColumn, isFillRemainingWidthColumn } from '../../fillRemainingWidth'
 import { ArtColumn } from '../../interfaces'
 import { calculateRenderInfo } from '../calculations'
-import { getMaximumColSpan } from '../helpers/getMaximumColSpan'
+import { getRenderedColSpan } from '../helpers/getMaximumColSpan'
 
 function makeTable(columns: ArtColumn[], maxRenderWidth = 240) {
   return {
@@ -65,7 +65,7 @@ test('calculateRenderInfo keeps fill column width empty and visible under auto v
   expect(Number.isFinite(info.rightLockTotalWidth)).toBe(true)
 })
 
-test('getMaximumColSpan allows full-row span to include fill column when center tail is visible', () => {
+test('getRenderedColSpan allows full-row span to include fill column when center tail is visible', () => {
   const columns = appendFillRemainingWidthColumn([
     {
       name: 'A',
@@ -76,20 +76,21 @@ test('getMaximumColSpan allows full-row span to include fill column when center 
   ])
 
   const info = calculateRenderInfo(makeTable(columns, 480))
-  const firstColumn = info.flat.full[0]
 
   expect(
-    getMaximumColSpan({
-      column: firstColumn,
+    getRenderedColSpan({
       colIndex: 0,
+      colSpan: 3,
+      fullFlatCount: info.flat.full.length,
       leftFlatCount: info.flat.left.length,
+      rightFlatCount: info.flat.right.length,
       horizontalRenderRange: info.horizontalRenderRange,
       visible: info.visible,
     }),
   ).toBe(3)
 })
 
-test('getMaximumColSpan does not cross hidden center columns to reach fill column', () => {
+test('getRenderedColSpan does not cross hidden center columns to reach fill column unless requested span reaches it', () => {
   const columns = appendFillRemainingWidthColumn([
     { name: 'A', code: 'a', width: 120 },
     { name: 'B', code: 'b', width: 120 },
@@ -104,17 +105,19 @@ test('getMaximumColSpan does not cross hidden center columns to reach fill colum
 
   expect(visibleColumn).not.toBeNull()
   expect(
-    getMaximumColSpan({
-      column: visibleColumn!.col,
+    getRenderedColSpan({
       colIndex: visibleColumn!.colIndex,
+      colSpan: 2,
+      fullFlatCount: info.flat.full.length,
       leftFlatCount: info.flat.left.length,
+      rightFlatCount: info.flat.right.length,
       horizontalRenderRange: info.horizontalRenderRange,
       visible: info.visible,
     }),
   ).toBeLessThan(columns.length)
 })
 
-test('getMaximumColSpan keeps right lock columns at least one cell wide when rowSpan is enabled', () => {
+test('getRenderedColSpan keeps right lock columns at least one cell wide when rowSpan is enabled', () => {
   const columns: ArtColumn[] = [
     { name: 'A', code: 'a', width: 120 },
     { name: 'B', code: 'b', width: 120 },
@@ -123,16 +126,62 @@ test('getMaximumColSpan keeps right lock columns at least one cell wide when row
   ]
 
   const info = calculateRenderInfo(makeTable(columns, 120))
-  const rightLockColumn = info.flat.full[info.flat.full.length - 1]
   const rightLockIndex = info.flat.full.length - 1
 
   expect(
-    getMaximumColSpan({
-      column: rightLockColumn,
+    getRenderedColSpan({
       colIndex: rightLockIndex,
+      colSpan: 4,
+      fullFlatCount: info.flat.full.length,
       leftFlatCount: info.flat.left.length,
+      rightFlatCount: info.flat.right.length,
       horizontalRenderRange: info.horizontalRenderRange,
       visible: info.visible,
     }),
   ).toBe(1)
+})
+
+test('getRenderedColSpan lets full-row detail span across visible right lock columns', () => {
+  const columns: ArtColumn[] = [
+    { name: 'A', code: 'a', width: 120 },
+    { name: 'B', code: 'b', width: 120 },
+    { name: 'C', code: 'c', width: 120 },
+    { name: 'D', code: 'd', width: 120, lock: true },
+  ]
+
+  const info = calculateRenderInfo(makeTable(columns, 120))
+
+  expect(
+    getRenderedColSpan({
+      colIndex: 0,
+      colSpan: info.flat.full.length,
+      fullFlatCount: info.flat.full.length,
+      leftFlatCount: info.flat.left.length,
+      rightFlatCount: info.flat.right.length,
+      horizontalRenderRange: info.horizontalRenderRange,
+      visible: info.visible,
+    }),
+  ).toBe(info.visible.length)
+})
+
+test('getRenderedColSpan supports open-ended full-row spans after fillRemainingWidth appends a fill column', () => {
+  const columns = appendFillRemainingWidthColumn([
+    { name: '订单', code: 'order', width: 120 },
+    { name: '创建时间', code: 'createdAt', width: 120 },
+    { name: '操作', code: 'action', width: 120, lock: true },
+  ])
+
+  const info = calculateRenderInfo(makeTable(columns, 120))
+
+  expect(
+    getRenderedColSpan({
+      colIndex: 0,
+      colSpan: Number.MAX_SAFE_INTEGER,
+      fullFlatCount: info.flat.full.length,
+      leftFlatCount: info.flat.left.length,
+      rightFlatCount: info.flat.right.length,
+      horizontalRenderRange: info.horizontalRenderRange,
+      visible: info.visible,
+    }),
+  ).toBe(info.visible.length)
 })

@@ -6,14 +6,21 @@ import collectNodes from './collectNodes'
 import getTreeDepth from './getTreeDepth'
 import isLeafNode from './isLeafNode'
 
-function safeGetSpanRect(column: ArtColumn, record: any, rowIndex: number, colIndex: number): SpanRect {
+function safeGetSpanRect(
+  column: ArtColumn,
+  record: any,
+  rowIndex: number,
+  colIndex: number,
+  rowCount: number,
+  colCount: number,
+): SpanRect {
   let colSpan = 1
   let rowSpan = 1
   if (column.getSpanRect) {
     const value = internals.safeGetValue(column, record, rowIndex)
     const spanRect = column.getSpanRect(value, record, rowIndex)
-    colSpan = spanRect == null ? 1 : spanRect.right - colIndex
-    rowSpan = spanRect == null ? 1 : spanRect.bottom - rowIndex
+    colSpan = spanRect == null ? 1 : Math.max(1, Math.min(colCount, spanRect.right) - colIndex)
+    rowSpan = spanRect == null ? 1 : Math.max(1, Math.min(rowCount, spanRect.bottom) - rowIndex)
   } else {
     const cellProps = internals.safeGetCellProps(column, record, rowIndex)
     if (cellProps.colSpan != null) {
@@ -23,9 +30,6 @@ function safeGetSpanRect(column: ArtColumn, record: any, rowIndex: number, colIn
       rowSpan = cellProps.rowSpan
     }
   }
-
-  // 注意这里没有考虑「rowSpan/colSpan 不能过大，避免 rowSpan/colSpan 影响因虚拟滚动而未渲染的单元格」
-
   return {
     top: rowIndex,
     bottom: rowIndex + rowSpan,
@@ -117,7 +121,7 @@ export default function exportTableAsExcel(
           return null
         }
 
-        const spanRect = safeGetSpanRect(col, record, rowIndex, colIndex)
+        const spanRect = safeGetSpanRect(col, record, rowIndex, colIndex, dataSource.length, leafColumns.length)
         const rowSpan = spanRect.bottom - spanRect.top
         const colSpan = spanRect.right - spanRect.left
         if (rowSpan > 1 || colSpan > 1) {

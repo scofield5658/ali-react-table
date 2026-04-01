@@ -363,6 +363,39 @@ select {
   color: #9c2828;
 }
 
+.review-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(52, 87, 140, 0.1);
+  color: #35507a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.detail-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.mini-action {
+  padding: 4px 10px;
+  border: 1px solid rgba(72, 54, 38, 0.28);
+  background: #fffaf0;
+  color: #3d3025;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.mini-action.ghost {
+  background: transparent;
+}
+
 .detail-card {
   padding: 14px;
   background:

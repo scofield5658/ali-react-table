@@ -2,7 +2,7 @@ import React, { ReactNode, useState } from 'react'
 import { BaseTable, features, useTablePipeline } from './runtime-lib'
 import type { ArtColumn, BaseTableProps } from './runtime-lib'
 
-type ScenarioKey = 'flat' | 'tree' | 'detail' | 'merge'
+type ScenarioKey = 'flat' | 'tree' | 'detail' | 'grouping' | 'merge'
 type VolumeKey = 'small' | 'medium' | 'large'
 type HeightPresetKey = 'compact' | 'default' | 'tall'
 
@@ -41,7 +41,14 @@ const scenarioMeta: Record<
     eyebrow: 'Row Detail',
     description: '每行都有摘要和明细，展开后插入一个跨列 detail 行渲染子表。',
     chain: 'input -> rowDetail -> BaseTable',
-    note: '适合调“主表 + 子表”的组合 feature，比如操作列、行内面板、异步明细。',
+    note: '适合调“主表 + 子表”的组合 feature，也覆盖主表右固定列与 detail 子表的遮挡回归。',
+  },
+  grouping: {
+    title: '分组表头',
+    eyebrow: 'Row Grouping',
+    description: '原始数据按组输入，通过 rowGrouping 插入整行分组头，展开后渲染组内明细。',
+    chain: 'input(group) -> rowGrouping -> BaseTable',
+    note: '适合验证分组头整行 span 与 fillRemainingWidth、右固定列、虚拟滚动的组合行为。',
   },
   merge: {
     title: '合并单元格',
@@ -54,17 +61,18 @@ const scenarioMeta: Record<
 
 const volumeMeta: Record<
   VolumeKey,
-  { label: string; flatCount: number; treeRoots: number; detailCount: number; mergeGroups: number }
+  { label: string; flatCount: number; treeRoots: number; detailCount: number; groupingGroups: number; mergeGroups: number }
 > = {
-  small: { label: 'S', flatCount: 18, treeRoots: 3, detailCount: 10, mergeGroups: 2 },
-  medium: { label: 'M', flatCount: 64, treeRoots: 4, detailCount: 24, mergeGroups: 4 },
-  large: { label: 'L', flatCount: 240, treeRoots: 6, detailCount: 60, mergeGroups: 8 },
+  small: { label: 'S', flatCount: 18, treeRoots: 3, detailCount: 10, groupingGroups: 4, mergeGroups: 2 },
+  medium: { label: 'M', flatCount: 64, treeRoots: 4, detailCount: 24, groupingGroups: 8, mergeGroups: 4 },
+  large: { label: 'L', flatCount: 240, treeRoots: 6, detailCount: 60, groupingGroups: 14, mergeGroups: 8 },
 }
 
 const accentByScenario: Record<ScenarioKey, string> = {
   flat: '#e9734a',
   tree: '#0f766e',
   detail: '#2d5bff',
+  grouping: '#17594a',
   merge: '#8a5a2b',
 }
 
@@ -110,6 +118,7 @@ export default function App() {
                 ['flat', '平铺'],
                 ['tree', '树形'],
                 ['detail', '子表'],
+                ['grouping', '分组'],
                 ['merge', '合并'],
               ] as Array<[ScenarioKey, string]>
             ).map(([key, label]) => (
@@ -212,7 +221,9 @@ export default function App() {
                     ? '展开/缩进'
                     : scenario === 'detail'
                       ? '主子表联动'
-                      : 'Span/复杂排版'
+                      : scenario === 'grouping'
+                        ? '分组/整行 Span'
+                        : 'Span/复杂排版'
               }
             />
           </div>
@@ -271,6 +282,20 @@ function ScenarioBoard({
   if (scenario === 'detail') {
     return (
       <DetailScenarioTable
+        volume={volume}
+        lockColumns={lockColumns}
+        stickyHeader={stickyHeader}
+        tableMaxHeight={tableMaxHeight}
+        virtual={virtual}
+        outerBorder={outerBorder}
+        fillRemaining={fillRemaining}
+      />
+    )
+  }
+
+  if (scenario === 'grouping') {
+    return (
+      <GroupingScenarioTable
         volume={volume}
         lockColumns={lockColumns}
         stickyHeader={stickyHeader}
@@ -564,6 +589,64 @@ function DetailSubTable({ parent, fillRemaining }: { parent: any; fillRemaining:
   )
 }
 
+function GroupingScenarioTable({
+  volume,
+  lockColumns,
+  stickyHeader,
+  tableMaxHeight,
+  virtual,
+  outerBorder,
+  fillRemaining,
+}: {
+  volume: VolumeKey
+  lockColumns: boolean
+  stickyHeader: boolean
+  tableMaxHeight: number
+  virtual: boolean
+  outerBorder: boolean
+  fillRemaining: boolean
+}) {
+  const rows = createGroupingRows(volume)
+  const pipeline = useTablePipeline()
+  pipeline
+    .input({
+      dataSource: rows,
+      columns: createGroupingColumns(lockColumns),
+    })
+    .primaryKey('id')
+    .use(
+      features.rowGrouping({
+        defaultOpenKeys: rows.slice(0, 2).map((row) => row.id),
+      }),
+    )
+
+  if (fillRemaining) {
+    pipeline.use(features.fillRemainingWidth())
+  }
+
+  const props = pipeline.getProps()
+
+  return (
+    <TableFrame
+      title="分组表头场景"
+      subtitle="分组头通过 rowGrouping 生成整行 header，方便直接回归 full-row span 与右固定列的交互。"
+    >
+      <BaseTable
+        {...props}
+        isStickyHeader={stickyHeader}
+        useVirtual={virtual ? 'auto' : false}
+        useOuterBorder={outerBorder}
+        useOutterHeight
+        defaultColumnWidth={150}
+        style={getPlayableTableStyle(tableMaxHeight, {
+          '--header-bgcolor': '#e3d9c6',
+          '--highlight-bgcolor': '#f2e7cf',
+        })}
+      />
+    </TableFrame>
+  )
+}
+
 function TableFrame({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <div className="table-frame">
@@ -737,6 +820,98 @@ function createDetailColumns(lockColumns: boolean): ArtColumn[] {
     { name: '订单额', code: 'amount', width: 140, align: 'right', render: (value: number) => formatCurrency(value) },
     { name: '商品数', code: 'itemCount', width: 120, align: 'right' },
     { name: '创建时间', code: 'createdAt', width: 160 },
+    {
+      name: '复核状态',
+      code: 'reviewStatus',
+      width: 140,
+      lock: lockColumns,
+      render(value: string) {
+        return <span className="review-badge">{value}</span>
+      },
+    },
+    {
+      name: '操作',
+      code: 'action',
+      width: 140,
+      lock: lockColumns,
+      render() {
+        return (
+          <div className="detail-actions">
+            <button type="button" className="mini-action">
+              处理
+            </button>
+            <button type="button" className="mini-action ghost">
+              查看
+            </button>
+          </div>
+        )
+      },
+    },
+  ]
+}
+
+function createGroupingColumns(lockColumns: boolean): ArtColumn[] {
+  return [
+    {
+      name: '分组 / 标的',
+      code: 'name',
+      width: 260,
+      lock: lockColumns,
+      render(value: string, row: any) {
+        return (
+          <div className="cell-stack">
+            <strong>{value}</strong>
+            <span>{row.groupSubtitle ?? row.strategy}</span>
+          </div>
+        )
+      },
+    },
+    { name: '渠道', code: 'channel', width: 140, lock: lockColumns },
+    { name: '负责人', code: 'owner', width: 120 },
+    {
+      name: '状态',
+      code: 'status',
+      width: 120,
+      render(value: string) {
+        return <span className={`status-dot status-${value.toLowerCase()}`}>{value}</span>
+      },
+    },
+    {
+      name: '目标金额',
+      code: 'targetAmount',
+      width: 140,
+      align: 'right',
+      render: (value: number) => formatCurrency(value),
+    },
+    { name: '进度', code: 'progress', width: 120, align: 'right' },
+    { name: '更新时间', code: 'updatedAt', width: 160 },
+    {
+      name: '复核状态',
+      code: 'reviewStatus',
+      width: 140,
+      lock: lockColumns,
+      render(value: string) {
+        return <span className="review-badge">{value}</span>
+      },
+    },
+    {
+      name: '操作',
+      code: 'action',
+      width: 140,
+      lock: lockColumns,
+      render() {
+        return (
+          <div className="detail-actions">
+            <button type="button" className="mini-action">
+              处理
+            </button>
+            <button type="button" className="mini-action ghost">
+              查看
+            </button>
+          </div>
+        )
+      },
+    },
   ]
 }
 
@@ -943,10 +1118,45 @@ function createDetailRows(volume: VolumeKey) {
       channel: ['直营', '分销', '联营'][index % 3],
       owner: ['Cora', 'Mika', 'Theo', 'Liam'][index % 4],
       status: ['Pending', 'Packed', 'Delayed'][index % 3],
+      reviewStatus: ['待复核', '已复核', '复核异常'][index % 3],
       amount: 1200 + itemCount * 380 + (index % 6) * 240,
       itemCount,
       createdAt: `2026-03-${String((index % 17) + 3).padStart(2, '0')} 0${index % 9}:10`,
       lineItems,
+    }
+  })
+}
+
+function createGroupingRows(volume: VolumeKey) {
+  const groupCount = volumeMeta[volume].groupingGroups
+  const groupOwners = ['Cora', 'Mika', 'Theo', 'Liam']
+  const channels = ['直营', '分销', '联营']
+  const statuses = ['Pending', 'Packed', 'Delayed']
+  const reviewStatuses = ['待复核', '已复核', '复核异常']
+
+  return Array.from({ length: groupCount }, (_, index) => {
+    const childCount = volume === 'small' ? 2 : volume === 'medium' ? 3 : 4
+
+    return {
+      id: `group-${index}`,
+      name: `Batch ${String(index + 1).padStart(2, '0')}`,
+      groupTitle: `批次 ${String(index + 1).padStart(2, '0')} / ${['晨盘策略', '午盘调仓', '尾盘回补'][index % 3]}`,
+      groupSubtitle: `${channels[index % channels.length]} · ${childCount} 条任务 · 右固定列回归`,
+      children: Array.from({ length: childCount }, (_, childIndex) => {
+        const status = statuses[(index + childIndex) % statuses.length]
+        return {
+          id: `group-${index}-child-${childIndex}`,
+          name: `${['沪深 300', '中证 500', '创业板指', '科创 50'][(index + childIndex) % 4]} 组合`,
+          strategy: ['均衡增强', '行业轮动', '低波防守', '事件驱动'][(index + childIndex) % 4],
+          channel: channels[(index + childIndex) % channels.length],
+          owner: groupOwners[(index + childIndex) % groupOwners.length],
+          status,
+          targetAmount: 320000 + index * 28000 + childIndex * 16000,
+          progress: `${48 + ((index + childIndex) % 5) * 11}%`,
+          updatedAt: `2026-03-${String((index % 18) + 4).padStart(2, '0')} 1${childIndex}:20`,
+          reviewStatus: reviewStatuses[(index + childIndex) % reviewStatuses.length],
+        }
+      }),
     }
   })
 }

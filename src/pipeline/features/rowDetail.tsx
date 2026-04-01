@@ -3,7 +3,7 @@ import React, { ReactNode } from 'react'
 import { ExpansionCell, icons, InlineFlexCell } from '../../common-views'
 import { ArtColumn } from '../../interfaces'
 import { internals } from '../../internals'
-import { collectNodes, mergeCellProps } from '../../utils'
+import { mergeCellProps } from '../../utils'
 import { always, flatMap } from '../../utils/others'
 import { TablePipeline } from '../pipeline'
 
@@ -46,6 +46,7 @@ export interface RowDetailFeatureOptions {
 }
 
 const rowDetailSymbol = Symbol('row-detail')
+const openEndedSpanRight = Number.MAX_SAFE_INTEGER
 
 const fallbackRenderDetail = () => (
   <div style={{ margin: '8px 24px' }}>
@@ -124,7 +125,6 @@ export function rowDetail(opts: RowDetailFeatureOptions = {}) {
       if (columns.length === 0) {
         return columns
       }
-      const columnFlatCount = collectNodes(columns, 'leaf-only').length
       const [firstCol, ...others] = columns
 
       const render = (value: any, row: any, rowIndex: number) => {
@@ -209,8 +209,8 @@ export function rowDetail(opts: RowDetailFeatureOptions = {}) {
           getCellProps: clickArea === 'cell' ? getCellProps : firstCol.getCellProps,
           getSpanRect(value: any, row: any, rowIndex: number) {
             if (row[rowDetailMetaKey]) {
-              // detail 总是成一行
-              return { top: rowIndex, bottom: rowIndex + 1, left: 0, right: columnFlatCount }
+              // detail 总是成一行，并且需要覆盖后续 feature 追加的列
+              return { top: rowIndex, bottom: rowIndex + 1, left: 0, right: openEndedSpanRight }
             }
           },
         },
