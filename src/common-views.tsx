@@ -68,6 +68,22 @@ function InfoIcon(props: IconProps) {
   )
 }
 
+function FilterIcon(props: IconProps) {
+  return (
+    <svg
+      focusable="false"
+      preserveAspectRatio="xMidYMid meet"
+      fill="currentColor"
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      {...props}
+    >
+      <path d="M2 3.25c0-.69.56-1.25 1.25-1.25h9.5c.69 0 1.25.56 1.25 1.25 0 .31-.12.61-.33.84L9.5 8.58V12a1 1 0 0 1-.45.83l-1.8 1.2A.75.75 0 0 1 6 13.4V8.58L2.33 4.09A1.25 1.25 0 0 1 2 3.25zm1.53.25L7.2 8v4.01l.8-.54V8l3.67-4.5H3.53z" />
+    </svg>
+  )
+}
+
 function CaretRightIcon(props: IconProps) {
   return (
     <svg
@@ -96,5 +112,6 @@ export const icons = {
   Loading: LoadingIcon,
   CaretDown: CaretDownIcon,
   CaretRight: CaretRightIcon,
+  Filter: FilterIcon,
   Info: InfoIcon,
 }

@@ -4,6 +4,17 @@ export type ArtColumnAlign = 'left' | 'center' | 'right'
 
 export type CellProps = React.TdHTMLAttributes<HTMLTableCellElement>
 
+export interface ArtColumnFilterProps {
+  /** 是否展示搜索输入框，默认为 true */
+  showSearch?: boolean
+
+  /** 自定义筛选条件 */
+  filterOptions?(inputValue: string, record: any): boolean
+
+  /** 预置的筛选项列表 */
+  dataSource?: string[]
+}
+
 export interface ArtColumnStaticPart {
   /** 列的名称 */
   name: string
@@ -31,6 +42,9 @@ export interface ArtColumnStaticPart {
 
   /** 功能开关 */
   features?: { [key: string]: any }
+
+  /** 表头筛选配置 */
+  filterProps?: ArtColumnFilterProps
 }
 
 export interface ArtColumnDynamicPart {

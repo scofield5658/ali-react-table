@@ -1,4 +1,5 @@
-import React, { ReactNode, useState } from 'react'
+import React, { ReactNode, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { BaseTable, features, useTablePipeline } from './runtime-lib'
 import type { ArtColumn, BaseTableProps } from './runtime-lib'
 
@@ -26,8 +27,8 @@ const scenarioMeta: Record<
     title: '平铺直出',
     eyebrow: 'Flat Dataset',
     description: '最贴近列表页的日常表格，适合调排序、锁列、虚拟滚动和单元格渲染。',
-    chain: 'input -> sort -> BaseTable',
-    note: '适合先接最基础的新 feature，确认列增强和行渲染没有副作用。',
+    chain: 'input -> filterMode -> sort -> BaseTable',
+    note: '默认用单列排序演示，更容易直接观察点击表头后的顺序变化。',
   },
   tree: {
     title: '树状展开',
@@ -393,7 +394,13 @@ function FlatScenarioTable({
   fillRemaining: boolean
 }) {
   const rows = createFlatRows(volume)
-  const pipeline = useTablePipeline()
+  const [keepFilterDataSource, setKeepFilterDataSource] = useState(false)
+  const [remoteFilterData, setRemoteFilterData] = useState<Array<{ code: string; filterValue: any }>>([])
+  const pipeline = useTablePipeline({
+    components: {
+      Popover: PlaygroundPopover,
+    },
+  })
   pipeline
     .input({
       dataSource: rows,
@@ -401,8 +408,16 @@ function FlatScenarioTable({
     })
     .primaryKey('id')
     .use(
+      features.filterMode({
+        keepDataSource: keepFilterDataSource,
+        onChangeFilterData(nextFilterData) {
+          setRemoteFilterData(nextFilterData)
+        },
+      }),
+    )
+    .use(
       features.sort({
-        mode: 'multiple',
+        mode: 'single',
         defaultSorts: [{ code: 'gmv', order: 'desc' }],
         highlightColumnWhenActive: true,
       }),
@@ -415,7 +430,35 @@ function FlatScenarioTable({
   const props = pipeline.getProps()
 
   return (
-    <TableFrame title="平铺直出表格" subtitle={`共 ${rows.length} 行数据，默认开启多列排序示例。`}>
+    <TableFrame
+      title="平铺直出表格"
+      subtitle={`共 ${rows.length} 行数据，默认开启漏斗筛选与单列排序示例。`}
+    >
+      <div className="scenario-toolbar">
+        <div className="scenario-toolbar-group">
+          <span className="scenario-toolbar-label">筛选模式</span>
+          <div className="segmented inline">
+            <button
+              type="button"
+              className={keepFilterDataSource ? 'segment' : 'segment active'}
+              onClick={() => setKeepFilterDataSource(false)}
+            >
+              本地筛选
+            </button>
+            <button
+              type="button"
+              className={keepFilterDataSource ? 'segment active' : 'segment'}
+              onClick={() => setKeepFilterDataSource(true)}
+            >
+              仅冒泡
+            </button>
+          </div>
+        </div>
+        <div className="remote-filter-preview">
+          <span className="scenario-toolbar-label">筛选回调</span>
+          <code>{remoteFilterData.length > 0 ? JSON.stringify(remoteFilterData) : '[]'}</code>
+        </div>
+      </div>
       <BaseTable
         {...props}
         isStickyHeader={stickyHeader}
@@ -688,6 +731,95 @@ function MetricCard({ title, value }: { title: string; value: string }) {
   )
 }
 
+function PlaygroundPopover({
+  visible,
+  content,
+  children,
+}: {
+  visible?: boolean
+  content?: ReactNode
+  children: ReactNode
+}) {
+  const triggerRef = useRef<HTMLSpanElement>(null)
+  const [, forcePositionUpdate] = useState(0)
+
+  useEffect(() => {
+    if (!visible) {
+      return
+    }
+
+    const handleWindowChange = () => forcePositionUpdate((value) => value + 1)
+
+    window.addEventListener('resize', handleWindowChange)
+    window.addEventListener('scroll', handleWindowChange, true)
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange)
+      window.removeEventListener('scroll', handleWindowChange, true)
+    }
+  }, [visible])
+
+  const panelStyle = getPlaygroundPopoverPanelStyle(triggerRef.current)
+
+  return (
+    <span className="playground-popover" ref={triggerRef}>
+      {children}
+      {visible && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              className="playground-popover-panel"
+              style={panelStyle}
+              onClick={(event) => {
+                event.stopPropagation()
+              }}
+            >
+              {content}
+            </div>,
+            document.body,
+          )
+        : null}
+    </span>
+  )
+}
+
+function getPlaygroundPopoverPanelStyle(trigger: HTMLSpanElement | null): React.CSSProperties {
+  const fallbackWidth = 160
+
+  if (typeof window === 'undefined' || trigger == null) {
+    return {
+      position: 'fixed',
+      top: 72,
+      left: 12,
+      width: fallbackWidth,
+      zIndex: 9999,
+    }
+  }
+
+  const triggerRect = trigger.getBoundingClientRect()
+  const horizontalPadding = 12
+  const verticalPadding = 12
+  const panelWidth = fallbackWidth
+  const estimatedPanelHeight = 220
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const nextLeft = Math.min(
+    Math.max(horizontalPadding, triggerRect.right - panelWidth),
+    viewportWidth - panelWidth - horizontalPadding,
+  )
+  const showAbove = triggerRect.bottom + 8 + estimatedPanelHeight > viewportHeight - verticalPadding
+  const nextTop = showAbove
+    ? Math.max(verticalPadding, triggerRect.top - estimatedPanelHeight - 8)
+    : triggerRect.bottom + 8
+
+  return {
+    position: 'fixed',
+    top: nextTop,
+    left: nextLeft,
+    width: panelWidth,
+    zIndex: 9999,
+  }
+}
+
 function createFlatColumns(lockColumns: boolean): ArtColumn[] {
   return [
     {
@@ -696,6 +828,9 @@ function createFlatColumns(lockColumns: boolean): ArtColumn[] {
       width: 220,
       lock: lockColumns,
       features: { sortable: true },
+      filterProps: {
+        dataSource: ['Momo Desk 001', 'Momo Desk 018', 'Momo Desk 045', 'Momo Desk 064'],
+      },
       render(value: string, row: any) {
         return (
           <div className="cell-stack">
@@ -711,18 +846,29 @@ function createFlatColumns(lockColumns: boolean): ArtColumn[] {
       width: 120,
       lock: lockColumns,
       features: { sortable: true },
+      filterProps: {
+        dataSource: ['华东', '华南', '华北', '西南'],
+        showSearch: false,
+      },
     },
     {
       name: '负责人',
       code: 'owner',
       width: 140,
       features: { sortable: true },
+      filterProps: {
+        dataSource: ['Ada', 'Iris', 'Jules', 'Ming', 'Neo'],
+      },
     },
     {
       name: '状态',
       code: 'status',
       width: 130,
       features: { sortable: true },
+      filterProps: {
+        dataSource: ['Healthy', 'Watching', 'Risk'],
+        showSearch: false,
+      },
       render(value: string) {
         return <span className={`status-dot status-${value.toLowerCase()}`}>{value}</span>
       },
