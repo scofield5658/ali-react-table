@@ -11,30 +11,53 @@
 [node-url]: http://nodejs.org/download/
 [download-image]: https://img.shields.io/npm/dm/%40guozhi5658%2Fsrp-table.svg?style=flat-square
 [download-url]: https://www.npmjs.com/package/@guozhi5658/srp-table
-[license-image]: https://img.shields.io/npm/l/%40guozhi5658%2Fsrp-table.svg
+[license-image]: https://img.shields.io/npm/l/%40guozhi5658%2Fsrp-table.svg?style=flat-square
 
-`srp-table` is a high-performance table component library for React applications. It is designed for data-intensive UIs and supports two integration styles:
+**`@guozhi5658/srp-table`** is a high-performance React table library for data-heavy UIs. It is **forked from** [alibaba/ali-react-table](https://github.com/alibaba/ali-react-table) and keeps the MIT model; retain upstream attribution when redistributing or modifying the codebase.
 
-- direct prop-based usage with `BaseTable`
-- composable enhancement through `pipeline` and feature plugins
+## Architecture
 
-The library also exposes customizable component injection points and feature slots so teams can adapt rendering, interaction, and business behaviors without rewriting the rendering core.
+| Layer | Role |
+|-------|------|
+| **`BaseTable`** | Rendering core: horizontal/vertical virtualization, left/right locked columns, sticky header/footer, row height management. |
+| **`TablePipeline` + `features`** | Composable enhancements to `columns`, `dataSource`, row props, selection, tree shape, sorting, filters, etc., before props reach `<BaseTable />`. |
 
-## Project Status
+Integration styles:
 
-This project is forked from [alibaba/ali-react-table](https://github.com/alibaba/ali-react-table).
+- Pass props directly to **`BaseTable`**
+- Chain **`.use(features.xxx(...))`** on a pipeline, then **`<BaseTable {...pipeline.getProps()} />`**
 
-The fork keeps the original MIT licensing model. Please retain the upstream attribution and license terms when redistributing or modifying the codebase.
+A legacy **`transforms`** API still exists for compatibility; **new capabilities belong in `pipeline/features`**, not in `transforms`.
+
+Pivot / cross-table scenarios use the subpath package:
+
+```bash
+npm install @guozhi5658/srp-table
+# import from '@guozhi5658/srp-table/pivot'
+```
+
+## Pipeline features (overview)
+
+Sixteen features live under `features` and are composed with `pipeline.use(features.xxx(...))`. Several require UI components via **`ctx.components`** (e.g. Checkbox, Radio, Popover).
+
+| Group | Features |
+|-------|----------|
+| Selection | `multiSelect`, `singleSelect`, `treeSelect` |
+| Tree | `treeMode`, `buildTree` |
+| Expand / group | `rowDetail`, `rowGrouping` |
+| Column UX | `columnHover`, `columnRangeHover`, `columnResize`, `sort`, `tips`, `filterMode` |
+| Layout | `fillRemainingWidth`, `autoRowSpan` |
+| Row | `rowPopover` |
+
+For descriptions, `ctx.components` dependencies, and engineering constraints, see **[AGENTS.md](./AGENTS.md)** (Chinese, detailed). **[CLAUDE.md](./CLAUDE.md)** is a shorter English checklist for agents working in this repo.
 
 ## Highlights
 
-- high-performance rendering for large datasets
-- sticky header and sticky footer support
-- left and right locked columns
-- horizontal and vertical virtualization
-- tree data, row detail, sorting, and other pipeline-driven features
-- pluggable renderers and component slots for customization
-- pivot table entry for cross-table and cross-tree-table scenarios
+- Virtualized rows and columns for large datasets  
+- Sticky header/footer, left/right locked columns  
+- Tree rows, row detail, grouping, sorting, resizing, filters, and other pipeline-driven behavior  
+- Customizable slots: `BaseTableProps.components`, column render hooks, pipeline `ctx.components`  
+- **`@guozhi5658/srp-table/pivot`**: cross-table and cross-tree-table built on the same `BaseTable` core  
 
 ## Installation
 
@@ -42,7 +65,9 @@ The fork keeps the original MIT licensing model. Please retain the upstream attr
 npm install @guozhi5658/srp-table
 ```
 
-## Quick Start
+Peer dependency: **React** `^16.8.0 || ^17.0.1 || ^18.0.0`.
+
+## Quick start
 
 ### BaseTable
 
@@ -93,60 +118,27 @@ export function PipelineDemo({ columns, dataSource }) {
 }
 ```
 
-### Fill Remaining Width
-
-Use `features.fillRemainingWidth()` when you want fixed-width columns to keep their original widths as the container grows. Instead of stretching existing columns proportionally, the table appends a blank column on the right to absorb the remaining space.
-
-```tsx
-import { BaseTable, features, useTablePipeline } from '@guozhi5658/srp-table'
-
-export function FixedWidthDemo({ columns, dataSource }) {
-  const pipeline = useTablePipeline()
-
-  const tableProps = pipeline
-    .input({ columns, dataSource })
-    .primaryKey('id')
-    .use(features.fillRemainingWidth())
-    .getProps()
-
-  return (
-    <BaseTable
-      {...tableProps}
-      defaultColumnWidth={140}
-      isStickyHeader
-    />
-  )
-}
-```
-
-This feature is designed for the pipeline path and works with `defaultColumnWidth`, locked columns, and the table's built-in virtualization logic.
+You can combine multiple `.use(...)` calls; **order matters** when features append or rewrite columns. See **AGENTS.md** for full-row span and lock-column caveats.
 
 ## Playground
 
-Run the local playground to develop and validate new features against the built-in flat, tree, and row-detail mock datasets:
-
 ```bash
 npm install
-npm run playground
+npm run playground   # dev server (e.g. port 3100)
 ```
 
-The playground is intended for iterative feature work in a real React runtime and is the fastest way to verify layout, interaction, sticky behavior, and virtualization changes.
+The playground is a Vite app for flat, tree, row-detail, grouped-header, and merged-cell scenarios—useful for layout, sticky behavior, and virtualization checks. For library development, this repo pins **Node 22.x** via **Volta** (see `package.json`).
 
-## Build
+## Build & compatibility
 
 ```bash
-npm run build
+npm run build                  # Rollup → dist/
+npm run playground:build
+npm run verify:react-compat    # React 16 / 17 / 18 smoke script
 ```
 
-Build artifacts are emitted to `dist/`, including:
-
-- `dist/srp-table.js`
-- `dist/srp-table.esm.js`
-- `dist/srp-table.d.ts`
-- `dist/srp-table-pivot.js`
-- `dist/srp-table-pivot.esm.js`
-- `dist/srp-table-pivot.d.ts`
+Artifacts under `dist/` include `srp-table` and `srp-table-pivot` entry bundles and `.d.ts` files (see **Build** list in **AGENTS.md** if you need exact filenames).
 
 ## License
 
-MIT. This fork is based on [alibaba/ali-react-table](https://github.com/alibaba/ali-react-table), and the upstream attribution should be preserved.
+MIT. This fork is based on [alibaba/ali-react-table](https://github.com/alibaba/ali-react-table); preserve upstream attribution.
