@@ -29,6 +29,8 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
       - run: npm ci
-      - run: npm publish
+      # npm only lets CI tokens stage a release; approve it afterwards with `npm stage approve <stage-id>`.
+      - run: npm install -g npm@11.21.3
+      - run: npm stage publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
