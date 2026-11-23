@@ -90,6 +90,40 @@ test('re-rendering with new props keeps a single set of observers', () => {
   expect(scrollListeners.size).toBe(1)
 })
 
+test('tables rendered side by side keep independent subscriptions', () => {
+  const second = document.createElement('div')
+  second.style.overflow = 'auto'
+  second.style.height = '200px'
+  document.body.appendChild(second)
+  try {
+    mount()
+    const firstObservers = new Set(FakeResizeObserver.active)
+    act(() => {
+      ReactDOM.render(React.createElement(BaseTable, { primaryKey: 'id', columns, dataSource: rows }), second)
+    })
+    const secondObservers = [...FakeResizeObserver.active].filter((o) => !firstObservers.has(o))
+    expect(secondObservers.length).toBe(firstObservers.size)
+
+    // Unmounting one table leaves the other one's observers and scroll listener in place.
+    act(() => {
+      ReactDOM.unmountComponentAtNode(container)
+    })
+    expect(scrollListeners.size).toBe(0)
+    expect([...FakeResizeObserver.active].sort()).toEqual(secondObservers.sort())
+    for (const o of secondObservers) {
+      expect([...o.targets].every((t) => second.contains(t) || t === second)).toBe(true)
+    }
+
+    act(() => {
+      ReactDOM.unmountComponentAtNode(second)
+    })
+    expect(FakeResizeObserver.active.size).toBe(0)
+  } finally {
+    ReactDOM.unmountComponentAtNode(second)
+    second.remove()
+  }
+})
+
 test('mounting and unmounting repeatedly does not accumulate observers', () => {
   for (let i = 0; i < 10; i++) {
     mount()
