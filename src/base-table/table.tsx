@@ -657,7 +657,8 @@ export class BaseTable extends React.Component<BaseTableProps, BaseTableState> {
       this.domHelper.artTable,
       this.props$.pipe(op.skip(1), op.mapTo('structure-may-change')),
       this.props.virtualDebugLabel,
-    ).pipe(op.shareReplay())
+    // refCount 让卸载时的退订能断开 ResizeObserver 与滚动监听；两个订阅方只需要最新一次的可见区域
+    ).pipe(op.shareReplay({ bufferSize: 1, refCount: true }))
 
     // 每当可见部分发生变化的时候，调整 loading icon 的未知（如果 loading icon 存在的话）
     this.rootSubscription.add(
