@@ -5,13 +5,18 @@ import { EmptyHtmlTable } from '../empty'
 const render = (props: Partial<React.ComponentProps<typeof EmptyHtmlTable>> = {}) =>
   renderToStaticMarkup(React.createElement(EmptyHtmlTable, { descriptors: [], isLoading: false, ...props }))
 
-test('the default empty content draws its illustration inline instead of loading a remote image', () => {
+const imgSrc = (html: string) => decodeURIComponent(/<img[^>]*src="([^"]*)"/.exec(html)?.[1].replace(/&amp;/g, '&') ?? '')
+
+test('the default empty content keeps the original <img> element and only embeds its source', () => {
   const html = render()
-  expect(html).not.toMatch(/<img/)
+  expect(html).toMatch(/<img alt="empty-image" class="empty-image" src="data:image\/svg\+xml,/)
   expect(html).not.toMatch(/alicdn/)
-  expect(html).toMatch(/<svg[^>]*class="empty-image"/)
-  expect(html).toMatch(/xlink:href="#srp-empty-a"/)
-  expect(html).toMatch(/fill="url\(#srp-empty-b\)"/)
+  expect(imgSrc(html)).toMatch(/^data:image\/svg\+xml,<svg width="50" height="50" /)
+})
+
+test('the default empty content adds no element ids to the page', () => {
+  // Ids inside an <img> source stay in the image's own document, so several empty tables cannot collide.
+  expect(render()).not.toMatch(/\sid="/)
 })
 
 test('the default empty text is unchanged for existing consumers', () => {
