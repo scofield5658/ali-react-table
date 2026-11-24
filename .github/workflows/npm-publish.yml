@@ -22,6 +22,9 @@ jobs:
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,8 +32,6 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org/
       - run: npm ci
-      # npm only lets CI tokens stage a release; approve it afterwards with `npm stage approve <stage-id>`.
+      # Trusted Publisher (OIDC) stages a release without NODE_AUTH_TOKEN; approve it afterwards on npmjs.com or via `npm stage approve <stage-id>`.
       - run: npm install -g npm@11.21.3
       - run: npm stage publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
