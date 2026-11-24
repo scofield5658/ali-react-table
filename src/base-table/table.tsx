@@ -315,10 +315,11 @@ export class BaseTable extends React.Component<BaseTableProps, BaseTableState> {
 
     const { tableBody } = this.domHelper
     const { flat } = this.lastInfo
+    const hasData = this.props.dataSource.length > 0
 
     const leftLockShadow = this.domHelper.getLeftLockShadow()
     if (leftLockShadow) {
-      const shouldShowLeftLockShadow = flat.left.length > 0 && this.state.needRenderLock && x > 0
+      const shouldShowLeftLockShadow = hasData && flat.left.length > 0 && this.state.needRenderLock && x > 0
       if (shouldShowLeftLockShadow) {
         leftLockShadow.classList.add('show-shadow')
       } else {
@@ -329,7 +330,7 @@ export class BaseTable extends React.Component<BaseTableProps, BaseTableState> {
     const rightLockShadow = this.domHelper.getRightLockShadow()
     if (rightLockShadow) {
       const shouldShowRightLockShadow =
-        flat.right.length > 0 && this.state.needRenderLock && x < tableBody.scrollWidth - tableBody.clientWidth
+        hasData && flat.right.length > 0 && this.state.needRenderLock && x < tableBody.scrollWidth - tableBody.clientWidth
       if (shouldShowRightLockShadow) {
         rightLockShadow.classList.add('show-shadow')
       } else {

@@ -149,10 +149,25 @@ const outerBorderStyleMixin = css`
 `
 
 const outerHeightStyleMixin = css`
-  .${Classes.loadingWrapper} {
-    height: 100%;
-    .${Classes.loadingContentWrapper} {
+  &.empty {
+    .${Classes.loadingWrapper} {
       height: 100%;
+      .${Classes.loadingContentWrapper} {
+        height: 100%;
+      }
+    }
+    .${Classes.tableBody} tbody tr.last td {
+      border-right: none;
+      border-bottom: none;
+    }
+  }
+
+  &:not(.empty) {
+    .${Classes.loadingWrapper} {
+      min-height: 100%;
+      .${Classes.loadingContentWrapper} {
+        min-height: 100%;
+      }
     }
   }
 `
@@ -266,6 +281,10 @@ export const StyledArtTableWrapper = styled.div<DivStyledProps>`
     }
   }
 
+  .${Classes.artTable} {
+    position: relative;
+  }
+
   .${Classes.tableHeader} {
     overflow-x: auto;
     overflow-y: hidden;
@@ -367,6 +386,10 @@ export const StyledArtTableWrapper = styled.div<DivStyledProps>`
   }
 
   //#region 锁列阴影
+  &.empty .${Classes.lockShadowMask} {
+    display: none;
+  }
+
   .${Classes.lockShadowMask} {
     position: absolute;
     top: 0;
